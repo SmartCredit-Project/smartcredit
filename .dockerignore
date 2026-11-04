@@ -1,17 +1,69 @@
-.git
+# =========================
+# GIT
+# =========================
+
+.git/
 .gitignore
 
-__pycache__
+# =========================
+# PYTHON
+# =========================
+
+__pycache__/
 *.py[cod]
+*.log
 
+# =========================
+# ENVIRONNEMENT
+# =========================
 
+.venv/
+venv/
+env/
 
-.pytest_cache
+# =========================
+# VARIABLES ENVIRONNEMENT
+# =========================
 
-.ipynb_checkpoints
+.env
+.env.*
 
-data/processed/*
-!data/processed/.gitkeep
+# =========================
+# IDE
+# =========================
 
-models/*
-!models/.gitkeep
+.vscode/
+.idea/
+
+# =========================
+# JUPYTER
+# =========================
+
+.ipynb_checkpoints/
+*.ipynb
+
+# =========================
+# DATASETS
+# =========================
+
+data/raw/
+
+# =========================
+# RESULTATS EXPERIMENTAUX
+# =========================
+
+data/processed/
+
+# =========================
+# DOCUMENTATION INUTILE POUR L'IMAGE
+# =========================
+
+LICENSE
+README.md
+
+# =========================
+# SYSTEME
+# =========================
+
+.DS_Store
+Thumbs.db
