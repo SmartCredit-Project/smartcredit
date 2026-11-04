@@ -1,0 +1,16 @@
+services:
+  smartcredit-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: smartcredit-api
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+
+    restart: unless-stopped
