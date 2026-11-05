@@ -1,0 +1,42 @@
+default_language_version:
+  python: python3.12
+
+exclude: ^(data|models)/
+
+repos:
+  # ==========================================================
+  # 1. HOOKS GENERAUX PRE-COMMIT
+  # ==========================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # ==========================================================
+  # 2. FORMATAGE PYTHON
+  # ==========================================================
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+
+  # ==========================================================
+  # 3. LINTING PYTHON
+  # ==========================================================
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8

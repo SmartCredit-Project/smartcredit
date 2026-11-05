@@ -20,10 +20,7 @@ def plot_target_distribution(df, output_dir):
 
     plt.figure(figsize=(8, 5))
 
-    sns.countplot(
-        data=df,
-        x="loan_status"
-    )
+    sns.countplot(data=df, x="loan_status")
 
     plt.title("Distribution des statuts de remboursement")
     plt.xlabel("Statut (0 = pas de défaut, 1 = défaut)")
@@ -45,7 +42,7 @@ def plot_numeric_distributions(df, output_dir):
         "person_income",
         "loan_amnt",
         "loan_int_rate",
-        "loan_percent_income"
+        "loan_percent_income",
     ]
 
     for column in columns:
@@ -55,11 +52,7 @@ def plot_numeric_distributions(df, output_dir):
 
         plt.figure(figsize=(8, 5))
 
-        sns.histplot(
-            data=df,
-            x=column,
-            kde=True
-        )
+        sns.histplot(data=df, x=column, kde=True)
 
         plt.title(f"Distribution de {column}")
         plt.xlabel(column)
@@ -78,11 +71,7 @@ def plot_loan_amount_by_status(df, output_dir):
 
     plt.figure(figsize=(8, 5))
 
-    sns.boxplot(
-        data=df,
-        x="loan_status",
-        y="loan_amnt"
-    )
+    sns.boxplot(data=df, x="loan_status", y="loan_amnt")
 
     plt.title("Montant du crédit selon le statut")
     plt.xlabel("Statut (0 = pas de défaut, 1 = défaut)")
@@ -105,13 +94,7 @@ def plot_correlation_heatmap(df, output_dir):
 
     plt.figure(figsize=(12, 9))
 
-    sns.heatmap(
-        correlation,
-        annot=True,
-        cmap="coolwarm",
-        fmt=".2f",
-        linewidths=0.5
-    )
+    sns.heatmap(correlation, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
 
     plt.title("Matrice de corrélation des variables numériques")
 

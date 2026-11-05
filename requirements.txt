@@ -1,10 +1,23 @@
+# Framework backend
+Django>=5.2,<5.3
+djangorestframework>=3.15
+djangorestframework-simplejwt>=5.3
+drf-spectacular>=0.27
+django-cors-headers>=4.3
+
+# Base de données
+psycopg[binary]
+
+# Serveur de production Django
+gunicorn
+
+# Machine Learning
 pandas
 numpy
 scikit-learn
+joblib
+
+# Visualisation et explicabilité
 matplotlib
 seaborn
-joblib
-fastapi
-uvicorn[standard]
-pydantic
 shap

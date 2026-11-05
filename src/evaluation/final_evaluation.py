@@ -1,29 +1,25 @@
-
 import time
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.utils.class_weight import compute_sample_weight
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import (
     accuracy_score,
+    average_precision_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
     precision_score,
     recall_score,
-    f1_score,
     roc_auc_score,
-    average_precision_score,
-    confusion_matrix,
-    classification_report,
 )
+from sklearn.pipeline import Pipeline
+from sklearn.utils.class_weight import compute_sample_weight
 
-from src.preprocessing.cleaning import clean_dataset
 from src.features.feature_selection import split_features_target
+from src.preprocessing.cleaning import clean_dataset
 from src.preprocessing.preprocessing import create_preprocessor
 from src.training.split_data import split_data
-
 
 # ============================================================
 # 1. CONFIGURATION
@@ -46,6 +42,7 @@ THRESHOLDS = {
 # ============================================================
 # 2. CHARGEMENT ET PRÉPARATION DES DONNÉES
 # ============================================================
+
 
 def prepare_data():
 
@@ -76,6 +73,7 @@ def prepare_data():
 # ============================================================
 # 3. CRÉATION DES MODÈLES OPTIMISÉS
 # ============================================================
+
 
 def create_models():
 
@@ -111,14 +109,13 @@ def create_models():
 # 4. ENTRAÎNEMENT ET ÉVALUATION
 # ============================================================
 
+
 def evaluate_models(X_train, X_test, y_train, y_test):
 
     models = create_models()
 
     results = []
-    predictions_data = pd.DataFrame({
-        "true_class": y_test.to_numpy()
-    })
+    predictions_data = pd.DataFrame({"true_class": y_test.to_numpy()})
 
     for model_name, estimator in models.items():
 
@@ -126,10 +123,12 @@ def evaluate_models(X_train, X_test, y_train, y_test):
         print(f"ÉVALUATION : {model_name}")
         print("=" * 60)
 
-        pipeline = Pipeline(steps=[
-            ("preprocessor", create_preprocessor()),
-            ("model", estimator),
-        ])
+        pipeline = Pipeline(
+            steps=[
+                ("preprocessor", create_preprocessor()),
+                ("model", estimator),
+            ]
+        )
 
         # ----------------------------------------------------
         # Entraînement
@@ -256,23 +255,25 @@ def evaluate_models(X_train, X_test, y_train, y_test):
         # Enregistrement des résultats
         # ----------------------------------------------------
 
-        results.append({
-            "Model": model_name,
-            "Threshold": threshold,
-            "Accuracy": accuracy,
-            "Precision": precision,
-            "Recall": recall,
-            "F1": f1,
-            "ROC_AUC": roc_auc,
-            "PR_AUC": pr_auc,
-            "Specificity": specificity,
-            "TN": tn,
-            "FP": fp,
-            "FN": fn,
-            "TP": tp,
-            "Train_Time_s": train_time,
-            "Inference_Time_s": inference_time,
-        })
+        results.append(
+            {
+                "Model": model_name,
+                "Threshold": threshold,
+                "Accuracy": accuracy,
+                "Precision": precision,
+                "Recall": recall,
+                "F1": f1,
+                "ROC_AUC": roc_auc,
+                "PR_AUC": pr_auc,
+                "Specificity": specificity,
+                "TN": tn,
+                "FP": fp,
+                "FN": fn,
+                "TP": tp,
+                "Train_Time_s": train_time,
+                "Inference_Time_s": inference_time,
+            }
+        )
 
         predictions_data[f"{model_name}_probability"] = probabilities
         predictions_data[f"{model_name}_prediction"] = y_pred
@@ -316,6 +317,7 @@ def evaluate_models(X_train, X_test, y_train, y_test):
 # ============================================================
 # 6. POINT D'ENTRÉE DU PROGRAMME
 # ============================================================
+
 
 def main():
 

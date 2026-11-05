@@ -1,0 +1,7 @@
+-r requirements.txt
+
+# Qualité du code et hooks Git
+pre-commit
+black
+isort
+flake8

@@ -1,6 +1,6 @@
 from src.data.load_data import load_dataset
-from src.preprocessing.cleaning import clean_dataset
 from src.features.feature_selection import split_features_target
+from src.preprocessing.cleaning import clean_dataset
 
 # 1. Charger les données
 df = load_dataset()

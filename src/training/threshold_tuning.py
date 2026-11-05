@@ -1,4 +1,3 @@
-
 """
 SMARTCREDIT : THRESHOLD TUNING
 
@@ -14,36 +13,26 @@ Critère principal :
 F1-score.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-
-from pathlib import Path
-from sklearn.pipeline import Pipeline
-
 from sklearn.ensemble import RandomForestClassifier
-
-from sklearn.model_selection import (
-    StratifiedKFold,
-    cross_val_predict
-)
-
 from sklearn.metrics import (
     accuracy_score,
+    confusion_matrix,
+    f1_score,
     precision_score,
     recall_score,
-    f1_score,
-    confusion_matrix
 )
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.pipeline import Pipeline
 
-from src.preprocessing.cleaning import clean_dataset
 from src.features.feature_selection import split_features_target
-from src.training.split_data import split_data
+from src.preprocessing.cleaning import clean_dataset
 from src.preprocessing.preprocessing import create_preprocessor
-
-from src.training.hyperparameter_tuning import (
-    BalancedGradientBoostingClassifier
-)
-
+from src.training.hyperparameter_tuning import BalancedGradientBoostingClassifier
+from src.training.split_data import split_data
 
 # ============================================================
 # 1. CONFIGURATION
@@ -64,6 +53,7 @@ THRESHOLDS = np.linspace(0.10, 0.90, 81)
 # ============================================================
 # 2. CHARGEMENT DES DONNÉES
 # ============================================================
+
 
 def prepare_data():
 
@@ -99,52 +89,34 @@ def prepare_data():
 # 3. CONSTRUCTION DES MODÈLES OPTIMISÉS
 # ============================================================
 
+
 def get_optimized_models():
 
     models = {
-
         # ----------------------------------------------------
         # RANDOM FOREST OPTIMISÉ
         # ----------------------------------------------------
-
         "Random Forest - Optimized": RandomForestClassifier(
-
             n_estimators=150,
-
             min_samples_split=2,
-
             min_samples_leaf=1,
-
             max_features=0.8,
-
             max_depth=None,
-
             class_weight=None,
-
             random_state=RANDOM_STATE,
-
-            n_jobs=1
+            n_jobs=1,
         ),
-
         # ----------------------------------------------------
         # GRADIENT BOOSTING BALANCED OPTIMISÉ
         # ----------------------------------------------------
-
-        "Gradient Boosting - Balanced Optimized":
-            BalancedGradientBoostingClassifier(
-
-                subsample=0.7,
-
-                n_estimators=150,
-
-                min_samples_leaf=2,
-
-                max_depth=4,
-
-                learning_rate=0.1,
-
-                random_state=RANDOM_STATE
-            )
+        "Gradient Boosting - Balanced Optimized": BalancedGradientBoostingClassifier(
+            subsample=0.7,
+            n_estimators=150,
+            min_samples_leaf=2,
+            max_depth=4,
+            learning_rate=0.1,
+            random_state=RANDOM_STATE,
+        ),
     }
 
     return models
@@ -154,6 +126,7 @@ def get_optimized_models():
 # 4. CALCUL DES MÉTRIQUES POUR UN SEUIL
 # ============================================================
 
+
 def evaluate_threshold(y_true, probabilities, threshold):
 
     # Transformer les probabilités en classes
@@ -162,61 +135,36 @@ def evaluate_threshold(y_true, probabilities, threshold):
     # Calcul des métriques
     accuracy = accuracy_score(y_true, y_pred)
 
-    precision = precision_score(
-        y_true,
-        y_pred,
-        zero_division=0
-    )
+    precision = precision_score(y_true, y_pred, zero_division=0)
 
-    recall = recall_score(
-        y_true,
-        y_pred,
-        zero_division=0
-    )
+    recall = recall_score(y_true, y_pred, zero_division=0)
 
-    f1 = f1_score(
-        y_true,
-        y_pred,
-        zero_division=0
-    )
+    f1 = f1_score(y_true, y_pred, zero_division=0)
 
     # Matrice de confusion
-    tn, fp, fn, tp = confusion_matrix(
-        y_true,
-        y_pred,
-        labels=[0, 1]
-    ).ravel()
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
 
     # Capacité à reconnaître la classe 0
     specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
 
     return {
-
         "threshold": threshold,
-
         "accuracy": accuracy,
-
         "precision": precision,
-
         "recall": recall,
-
         "f1": f1,
-
         "specificity": specificity,
-
         "true_negative": tn,
-
         "false_positive": fp,
-
         "false_negative": fn,
-
-        "true_positive": tp
+        "true_positive": tp,
     }
 
 
 # ============================================================
 # 5. RECHERCHE DU MEILLEUR SEUIL
 # ============================================================
+
 
 def find_best_threshold(model_name, estimator, X_train, y_train, cv):
 
@@ -226,10 +174,7 @@ def find_best_threshold(model_name, estimator, X_train, y_train, cv):
 
     # Pipeline complet : prétraitement + modèle
     pipeline = Pipeline(
-        steps=[
-            ("preprocessor", create_preprocessor()),
-            ("model", estimator)
-        ]
+        steps=[("preprocessor", create_preprocessor()), ("model", estimator)]
     )
 
     print("\nCalcul des probabilités Out-of-Fold...")
@@ -237,20 +182,13 @@ def find_best_threshold(model_name, estimator, X_train, y_train, cv):
     # Chaque observation reçoit une probabilité
     # calculée par un modèle qui ne l'a pas entraînée.
     probabilities = cross_val_predict(
-
         estimator=pipeline,
-
         X=X_train,
-
         y=y_train,
-
         cv=cv,
-
         method="predict_proba",
-
         n_jobs=1,
-
-        verbose=1
+        verbose=1,
     )
 
     # Récupérer la colonne correspondant à la classe 1
@@ -264,11 +202,7 @@ def find_best_threshold(model_name, estimator, X_train, y_train, cv):
     # ÉVALUATION DU SEUIL PAR DÉFAUT : 0.50
     # --------------------------------------------------------
 
-    default_result = evaluate_threshold(
-        y_train,
-        probabilities_class_1,
-        0.50
-    )
+    default_result = evaluate_threshold(y_train, probabilities_class_1, 0.50)
 
     print("\nRésultats avec le seuil 0.50 :")
 
@@ -285,11 +219,7 @@ def find_best_threshold(model_name, estimator, X_train, y_train, cv):
 
     for threshold in THRESHOLDS:
 
-        result = evaluate_threshold(
-            y_train,
-            probabilities_class_1,
-            threshold
-        )
+        result = evaluate_threshold(y_train, probabilities_class_1, threshold)
 
         threshold_results.append(result)
 
@@ -301,14 +231,10 @@ def find_best_threshold(model_name, estimator, X_train, y_train, cv):
 
     max_f1 = results_df["f1"].max()
 
-    best_candidates = results_df[
-        np.isclose(results_df["f1"], max_f1)
-    ].copy()
+    best_candidates = results_df[np.isclose(results_df["f1"], max_f1)].copy()
 
     # En cas d'égalité, choisir le seuil le plus proche de 0.50.
-    best_row = best_candidates.loc[
-        (best_candidates["threshold"] - 0.50).abs().idxmin()
-    ]
+    best_row = best_candidates.loc[(best_candidates["threshold"] - 0.50).abs().idxmin()]
 
     best_threshold = best_row["threshold"]
 
@@ -323,63 +249,43 @@ def find_best_threshold(model_name, estimator, X_train, y_train, cv):
 
     print("\nMatrice de confusion :")
 
-    print(
-        f"True Negative  : {int(best_row['true_negative'])}"
-    )
+    print(f"True Negative  : {int(best_row['true_negative'])}")
 
-    print(
-        f"False Positive : {int(best_row['false_positive'])}"
-    )
+    print(f"False Positive : {int(best_row['false_positive'])}")
 
-    print(
-        f"False Negative : {int(best_row['false_negative'])}"
-    )
+    print(f"False Negative : {int(best_row['false_negative'])}")
 
-    print(
-        f"True Positive  : {int(best_row['true_positive'])}"
-    )
+    print(f"True Positive  : {int(best_row['true_positive'])}")
 
     # --------------------------------------------------------
     # RÉSULTATS DU MODÈLE
     # --------------------------------------------------------
 
     summary = {
-
         "model": model_name,
-
         "default_threshold": 0.50,
-
         "default_f1": default_result["f1"],
-
         "default_precision": default_result["precision"],
-
         "default_recall": default_result["recall"],
-
         "best_threshold": best_threshold,
-
         "best_accuracy": best_row["accuracy"],
-
         "best_precision": best_row["precision"],
-
         "best_recall": best_row["recall"],
-
         "best_f1": best_row["f1"],
-
-        "best_specificity": best_row["specificity"]
+        "best_specificity": best_row["specificity"],
     }
 
     # Ajouter le nom du modèle aux résultats détaillés
     results_df.insert(0, "model", model_name)
 
     # Sauvegarder les probabilités Out-of-Fold
-    oof_df = pd.DataFrame({
-
-        "model": model_name,
-
-        "y_true": np.asarray(y_train),
-
-        "probability_class_1": probabilities_class_1
-    })
+    oof_df = pd.DataFrame(
+        {
+            "model": model_name,
+            "y_true": np.asarray(y_train),
+            "probability_class_1": probabilities_class_1,
+        }
+    )
 
     return summary, results_df, oof_df
 
@@ -387,6 +293,7 @@ def find_best_threshold(model_name, estimator, X_train, y_train, cv):
 # ============================================================
 # 6. EXÉCUTION PRINCIPALE
 # ============================================================
+
 
 def main():
 
@@ -397,14 +304,7 @@ def main():
 
     X_train, y_train = prepare_data()
 
-    cv = StratifiedKFold(
-
-        n_splits=N_SPLITS,
-
-        shuffle=True,
-
-        random_state=RANDOM_STATE
-    )
+    cv = StratifiedKFold(n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE)
 
     models = get_optimized_models()
 
@@ -417,16 +317,11 @@ def main():
     for model_name, estimator in models.items():
 
         summary, details, oof_predictions = find_best_threshold(
-
             model_name=model_name,
-
             estimator=estimator,
-
             X_train=X_train,
-
             y_train=y_train,
-
-            cv=cv
+            cv=cv,
         )
 
         all_summaries.append(summary)
@@ -441,27 +336,15 @@ def main():
 
     summary_df = pd.DataFrame(all_summaries)
 
-    details_df = pd.concat(
-        all_details,
-        ignore_index=True
-    )
+    details_df = pd.concat(all_details, ignore_index=True)
 
-    oof_df = pd.concat(
-        all_oof_predictions,
-        ignore_index=True
-    )
+    oof_df = pd.concat(all_oof_predictions, ignore_index=True)
 
-    summary_path = (
-        OUTPUT_DIR / "threshold_tuning_summary.csv"
-    )
+    summary_path = OUTPUT_DIR / "threshold_tuning_summary.csv"
 
-    details_path = (
-        OUTPUT_DIR / "threshold_tuning_details.csv"
-    )
+    details_path = OUTPUT_DIR / "threshold_tuning_details.csv"
 
-    oof_path = (
-        OUTPUT_DIR / "threshold_tuning_oof_predictions.csv"
-    )
+    oof_path = OUTPUT_DIR / "threshold_tuning_oof_predictions.csv"
 
     summary_df.to_csv(summary_path, index=False)
 
@@ -479,9 +362,7 @@ def main():
     print("=" * 60)
 
     print(
-
         summary_df[
-
             [
                 "model",
                 "default_threshold",
@@ -491,9 +372,8 @@ def main():
                 "best_threshold",
                 "best_precision",
                 "best_recall",
-                "best_f1"
+                "best_f1",
             ]
-
         ].to_string(index=False)
     )
 

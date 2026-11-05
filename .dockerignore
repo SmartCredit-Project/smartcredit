@@ -67,3 +67,16 @@ README.md
 
 .DS_Store
 Thumbs.db
+
+# =========================
+# OUTILS DE DEVELOPPEMENT
+# =========================
+
+.git/
+.github/
+.pre-commit-config.yaml
+.flake8
+pyproject.toml
+requirements-dev.txt
+notebooks/
+src/

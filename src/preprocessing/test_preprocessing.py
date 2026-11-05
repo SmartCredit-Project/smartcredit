@@ -1,9 +1,6 @@
 from src.data.load_data import load_dataset
 from src.preprocessing.cleaning import clean_dataset
-from src.preprocessing.preprocessing import (
-    create_preprocessor,
-    FEATURE_COLUMNS,
-)
+from src.preprocessing.preprocessing import FEATURE_COLUMNS, create_preprocessor
 
 # 1. Charger le dataset original
 df = load_dataset()

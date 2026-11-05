@@ -1,33 +1,29 @@
 import time
+from pathlib import Path
 
 import pandas as pd
-
-from pathlib import Path
-from sklearn.pipeline import Pipeline
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
-    RandomForestClassifier,
+    ExtraTreesClassifier,
     GradientBoostingClassifier,
-    ExtraTreesClassifier
+    RandomForestClassifier,
 )
-
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
+    average_precision_score,
+    f1_score,
     precision_score,
     recall_score,
-    f1_score,
     roc_auc_score,
-    average_precision_score
 )
+from sklearn.pipeline import Pipeline
+from sklearn.tree import DecisionTreeClassifier
 
 from src.data.load_data import load_dataset
-from src.preprocessing.cleaning import clean_dataset
 from src.features.feature_selection import split_features_target
-from src.training.split_data import split_data
+from src.preprocessing.cleaning import clean_dataset
 from src.preprocessing.preprocessing import create_preprocessor
-
+from src.training.split_data import split_data
 
 # Chemin racine du projet
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -45,31 +41,17 @@ def get_models():
     """
 
     models = {
-        "Logistic Regression": LogisticRegression(
-            max_iter=1000,
-            random_state=42
-        ),
-
-        "Decision Tree": DecisionTreeClassifier(
-            random_state=42
-        ),
-
+        "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
+        "Decision Tree": DecisionTreeClassifier(random_state=42),
         "Random Forest": RandomForestClassifier(
-            n_estimators=150,
-            random_state=42,
-            n_jobs=-1
+            n_estimators=150, random_state=42, n_jobs=-1
         ),
-
         "Gradient Boosting": GradientBoostingClassifier(
-            n_estimators=100,
-            random_state=42
+            n_estimators=100, random_state=42
         ),
-
         "Extra Trees": ExtraTreesClassifier(
-            n_estimators=150,
-            random_state=42,
-            n_jobs=-1
-        )
+            n_estimators=150, random_state=42, n_jobs=-1
+        ),
     }
 
     return models
@@ -111,10 +93,7 @@ def compare_models():
 
         # Construire un pipeline indépendant pour chaque algorithme
         pipeline = Pipeline(
-            steps=[
-                ("preprocessor", create_preprocessor()),
-                ("model", estimator)
-            ]
+            steps=[("preprocessor", create_preprocessor()), ("model", estimator)]
         )
 
         # Entraînement
@@ -135,23 +114,11 @@ def compare_models():
         # Calcul des métriques
         accuracy = accuracy_score(y_test, y_pred)
 
-        precision = precision_score(
-            y_test,
-            y_pred,
-            zero_division=0
-        )
+        precision = precision_score(y_test, y_pred, zero_division=0)
 
-        recall = recall_score(
-            y_test,
-            y_pred,
-            zero_division=0
-        )
+        recall = recall_score(y_test, y_pred, zero_division=0)
 
-        f1 = f1_score(
-            y_test,
-            y_pred,
-            zero_division=0
-        )
+        f1 = f1_score(y_test, y_pred, zero_division=0)
 
         roc_auc = roc_auc_score(y_test, y_proba)
 
@@ -168,26 +135,25 @@ def compare_models():
         print(f"Inference time : {inference_time:.4f} secondes")
 
         # Enregistrer les résultats
-        results.append({
-            "model": model_name,
-            "accuracy": accuracy,
-            "precision": precision,
-            "recall": recall,
-            "f1_score": f1,
-            "roc_auc": roc_auc,
-            "pr_auc": pr_auc,
-            "training_time_seconds": training_time,
-            "inference_time_seconds": inference_time
-        })
+        results.append(
+            {
+                "model": model_name,
+                "accuracy": accuracy,
+                "precision": precision,
+                "recall": recall,
+                "f1_score": f1,
+                "roc_auc": roc_auc,
+                "pr_auc": pr_auc,
+                "training_time_seconds": training_time,
+                "inference_time_seconds": inference_time,
+            }
+        )
 
     # 7. Transformer les résultats en DataFrame
     results_df = pd.DataFrame(results)
 
     # 8. Trier par ROC-AUC décroissant
-    results_df = results_df.sort_values(
-        by="roc_auc",
-        ascending=False
-    )
+    results_df = results_df.sort_values(by="roc_auc", ascending=False)
 
     # 9. Créer le dossier de destination
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -198,12 +164,7 @@ def compare_models():
     # 11. Afficher le classement
     print("\n========== CLASSEMENT DES MODÈLES ==========")
 
-    print(
-        results_df.to_string(
-            index=False,
-            float_format=lambda value: f"{value:.4f}"
-        )
-    )
+    print(results_df.to_string(index=False, float_format=lambda value: f"{value:.4f}"))
 
     print("\nRésultats sauvegardés dans :")
     print(RESULTS_PATH)

@@ -1,9 +1,6 @@
 from pathlib import Path
 
-import pandas as pd
-
 from src.data.load_data import load_dataset
-
 
 # Racine du projet
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -39,18 +36,15 @@ def clean_dataset(df):
         "person_income",
         "person_emp_length",
         "loan_amnt",
-        "loan_status"
+        "loan_status",
     ]
 
     missing_columns = [
-        column for column in required_columns
-        if column not in df.columns
+        column for column in required_columns if column not in df.columns
     ]
 
     if missing_columns:
-        raise ValueError(
-            f"Colonnes indispensables absentes : {missing_columns}"
-        )
+        raise ValueError(f"Colonnes indispensables absentes : {missing_columns}")
 
     # -------------------------------------------------
     # 2. Vérification de la variable cible
@@ -62,9 +56,7 @@ def clean_dataset(df):
         )
 
     if not df["loan_status"].isin([0, 1]).all():
-        raise ValueError(
-            "loan_status doit contenir uniquement 0 ou 1."
-        )
+        raise ValueError("loan_status doit contenir uniquement 0 ou 1.")
 
     # -------------------------------------------------
     # 3. Suppression des doublons exacts
@@ -80,10 +72,7 @@ def clean_dataset(df):
     # 4. Traitement des âges invalides
     # -------------------------------------------------
 
-    invalid_age = (
-        (df["person_age"] < 18)
-        | (df["person_age"] > 100)
-    )
+    invalid_age = (df["person_age"] < 18) | (df["person_age"] > 100)
 
     report["invalid_ages_removed"] = int(invalid_age.sum())
 
@@ -93,24 +82,15 @@ def clean_dataset(df):
     # 5. Traitement de l'ancienneté professionnelle
     # -------------------------------------------------
 
-    invalid_employment = (
-        (df["person_emp_length"] < 0)
-        | (
-            df["person_emp_length"]
-            > (df["person_age"] - 14)
-        )
+    invalid_employment = (df["person_emp_length"] < 0) | (
+        df["person_emp_length"] > (df["person_age"] - 14)
     )
 
-    report["invalid_employment_lengths"] = int(
-        invalid_employment.sum()
-    )
+    report["invalid_employment_lengths"] = int(invalid_employment.sum())
 
     # Nous remplaçons les valeurs incohérentes par NaN.
     # L'imputation sera réalisée plus tard dans le pipeline.
-    df.loc[
-        invalid_employment,
-        "person_emp_length"
-    ] = float("nan")
+    df.loc[invalid_employment, "person_emp_length"] = float("nan")
 
     # -------------------------------------------------
     # 6. Vérification des revenus et montants
@@ -122,9 +102,7 @@ def clean_dataset(df):
 
     report["invalid_income_rows"] = int(invalid_income.sum())
 
-    report["invalid_loan_amount_rows"] = int(
-        invalid_loan_amount.sum()
-    )
+    report["invalid_loan_amount_rows"] = int(invalid_loan_amount.sum())
 
     if invalid_income.any() or invalid_loan_amount.any():
         raise ValueError(
@@ -136,9 +114,7 @@ def clean_dataset(df):
     # 7. Recalcul du ratio montant / revenu
     # -------------------------------------------------
 
-    df["loan_percent_income"] = (
-        df["loan_amnt"] / df["person_income"]
-    )
+    df["loan_percent_income"] = df["loan_amnt"] / df["person_income"]
 
     # -------------------------------------------------
     # 8. Rapport de nettoyage
@@ -148,15 +124,9 @@ def clean_dataset(df):
     report["final_rows"] = len(df)
     report["rows_removed"] = initial_rows - len(df)
 
-    report["remaining_missing_values"] = (
-        df.isnull().sum().to_dict()
-    )
+    report["remaining_missing_values"] = df.isnull().sum().to_dict()
 
-    report["target_distribution"] = (
-        df["loan_status"]
-        .value_counts()
-        .to_dict()
-    )
+    report["target_distribution"] = df["loan_status"].value_counts().to_dict()
 
     return df, report
 
@@ -164,16 +134,10 @@ def clean_dataset(df):
 def save_cleaned_dataset(df, report):
     """Enregistre les données nettoyées et le rapport."""
 
-    PROCESSED_DIR.mkdir(
-        parents=True,
-        exist_ok=True
-    )
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
     # Sauvegarde du dataset nettoyé
-    df.to_csv(
-        CLEANED_DATA_PATH,
-        index=False
-    )
+    df.to_csv(CLEANED_DATA_PATH, index=False)
 
     # Sauvegarde du rapport
     report_path = PROCESSED_DIR / "cleaning_report.txt"
@@ -200,10 +164,7 @@ def save_cleaned_dataset(df, report):
 
     print(f"Doublons supprimés : {report['duplicates_removed']}")
 
-    print(
-        "Âges invalides supprimés : "
-        f"{report['invalid_ages_removed']}"
-    )
+    print("Âges invalides supprimés : " f"{report['invalid_ages_removed']}")
 
     print(
         "Anciennetés incohérentes transformées en valeurs manquantes : "
