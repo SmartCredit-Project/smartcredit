@@ -9,7 +9,6 @@ from .views import (
     model_info,
 )
 
-
 router = DefaultRouter()
 
 router.register(
@@ -26,10 +25,7 @@ router.register(
 
 urlpatterns = [
     path("", home, name="api-home"),
-
     path("health/", health_check, name="health-check"),
-
     path("model-info/", model_info, name="model-info"),
-
     path("", include(router.urls)),
 ]

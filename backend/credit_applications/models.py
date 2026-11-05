@@ -179,15 +179,12 @@ class CreditApplication(models.Model):
 
     def __str__(self):
         return (
-            f"Demande #{self.pk} - {self.applicant} "
-            f"({self.get_status_display()})"
+            f"Demande #{self.pk} - {self.applicant} " f"({self.get_status_display()})"
         )
 
     def save(self, *args, **kwargs):
         if self.person_income and self.person_income > 0:
-            self.loan_percent_income = (
-                self.loan_amnt / self.person_income
-            )
+            self.loan_percent_income = self.loan_amnt / self.person_income
         else:
             self.loan_percent_income = 0
 

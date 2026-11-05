@@ -6,7 +6,6 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-
 # ============================================================
 # 1. CONFIGURATION GENERALE
 # ============================================================
@@ -35,7 +34,6 @@ ALLOWED_HOSTS = [
 # ============================================================
 
 INSTALLED_APPS = [
-
     # Applications natives Django
     "django.contrib.admin",
     "django.contrib.auth",
@@ -43,14 +41,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     # Django REST Framework et authentification JWT
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "corsheaders",
-
     # Applications SmartCredit
     "accounts",
     "applicants",
@@ -90,11 +86,8 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-
         "DIRS": [],
-
         "APP_DIRS": True,
-
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
@@ -120,27 +113,22 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-
         "NAME": os.environ.get(
             "DB_NAME",
             "smartcredit_db",
         ),
-
         "USER": os.environ.get(
             "DB_USER",
             "smartcredit_user",
         ),
-
         "PASSWORD": os.environ.get(
             "DB_PASSWORD",
             "",
         ),
-
         "HOST": os.environ.get(
             "DB_HOST",
             "localhost",
         ),
-
         "PORT": os.environ.get(
             "DB_PORT",
             "5432",
@@ -161,37 +149,26 @@ AUTH_USER_MODEL = "accounts.User"
 # ============================================================
 
 REST_FRAMEWORK = {
-
     # Réponses JSON
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
-
     # Réception des données JSON
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
     ],
-
     # Authentification par JWT
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
-
     # Tous les endpoints sont protégés par défaut
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
-
     # Documentation OpenAPI
-    "DEFAULT_SCHEMA_CLASS": (
-        "drf_spectacular.openapi.AutoSchema"
-    ),
-
+    "DEFAULT_SCHEMA_CLASS": ("drf_spectacular.openapi.AutoSchema"),
     # Pagination des listes
-    "DEFAULT_PAGINATION_CLASS": (
-        "rest_framework.pagination.PageNumberPagination"
-    ),
-
+    "DEFAULT_PAGINATION_CLASS": ("rest_framework.pagination.PageNumberPagination"),
     "PAGE_SIZE": 20,
 }
 
@@ -202,23 +179,14 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=int(
-            os.environ.get("JWT_ACCESS_MINUTES", "60")
-        )
+        minutes=int(os.environ.get("JWT_ACCESS_MINUTES", "60"))
     ),
-
     "REFRESH_TOKEN_LIFETIME": timedelta(
-        days=int(
-            os.environ.get("JWT_REFRESH_DAYS", "7")
-        )
+        days=int(os.environ.get("JWT_REFRESH_DAYS", "7"))
     ),
-
     "ROTATE_REFRESH_TOKENS": True,
-
     "BLACKLIST_AFTER_ROTATION": True,
-
     "UPDATE_LAST_LOGIN": True,
-
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
@@ -269,9 +237,7 @@ CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 MODEL_PATH = Path(
     os.environ.get(
         "MODEL_PATH",
-        BASE_DIR.parent
-        / "models"
-        / "gradient_boosting_final.joblib",
+        BASE_DIR.parent / "models" / "gradient_boosting_final.joblib",
     )
 )
 
@@ -280,12 +246,8 @@ MODEL_PATH = Path(
 # MEDIUM : probabilité < RISK_THRESHOLDS["HIGH"]
 # HIGH   : probabilité >= RISK_THRESHOLDS["HIGH"]
 RISK_THRESHOLDS = {
-    "MEDIUM": float(
-        os.environ.get("RISK_THRESHOLD_MEDIUM", "0.30")
-    ),
-    "HIGH": float(
-        os.environ.get("RISK_THRESHOLD_HIGH", "0.59")
-    ),
+    "MEDIUM": float(os.environ.get("RISK_THRESHOLD_MEDIUM", "0.30")),
+    "HIGH": float(os.environ.get("RISK_THRESHOLD_HIGH", "0.59")),
 }
 
 
@@ -300,26 +262,14 @@ AUTH_PASSWORD_VALIDATORS = [
             "UserAttributeSimilarityValidator"
         ),
     },
-
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "MinimumLengthValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "MinimumLengthValidator"),
     },
-
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "CommonPasswordValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "CommonPasswordValidator"),
     },
-
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "NumericPasswordValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "NumericPasswordValidator"),
     },
 ]
 
@@ -382,8 +332,7 @@ LOGGING = {
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = (
-        os.environ.get("SECURE_SSL_REDIRECT", "True").lower()
-        == "true"
+        os.environ.get("SECURE_SSL_REDIRECT", "True").lower() == "true"
     )
 
     SECURE_PROXY_SSL_HEADER = (
@@ -394,9 +343,7 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-    SECURE_HSTS_SECONDS = int(
-        os.environ.get("SECURE_HSTS_SECONDS", "31536000")
-    )
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 

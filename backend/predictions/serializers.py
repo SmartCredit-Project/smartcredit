@@ -1,6 +1,5 @@
-from rest_framework import serializers
-
 from credit_applications.models import CreditApplication
+from rest_framework import serializers
 
 from .models import ModelVersion, Prediction
 
@@ -134,11 +133,7 @@ class PredictionRequestSerializer(serializers.Serializer):
             "loan_amnt",
         ]
 
-        missing = [
-            feature
-            for feature in required_features
-            if feature not in attrs
-        ]
+        missing = [feature for feature in required_features if feature not in attrs]
 
         if missing:
             raise serializers.ValidationError(
@@ -154,9 +149,7 @@ class PredictionRequestSerializer(serializers.Serializer):
         return attrs
 
     def get_features(self):
-        application = self.validated_data.get(
-            "credit_application"
-        )
+        application = self.validated_data.get("credit_application")
 
         if application is not None:
             return application.get_model_features()
@@ -164,12 +157,8 @@ class PredictionRequestSerializer(serializers.Serializer):
         return {
             "person_age": self.validated_data["person_age"],
             "person_income": self.validated_data["person_income"],
-            "person_home_ownership": (
-                self.validated_data["person_home_ownership"]
-            ),
-            "person_emp_length": (
-                self.validated_data.get("person_emp_length")
-            ),
+            "person_home_ownership": (self.validated_data["person_home_ownership"]),
+            "person_emp_length": (self.validated_data.get("person_emp_length")),
             "loan_intent": self.validated_data["loan_intent"],
             "loan_amnt": self.validated_data["loan_amnt"],
         }

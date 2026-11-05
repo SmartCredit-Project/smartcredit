@@ -1,10 +1,9 @@
-from django.urls import reverse
-from rest_framework import status
-from rest_framework.test import APITestCase
-
 from accounts.models import FeatureFlag, FinancialInstitution, User
 from applicants.models import Applicant
 from credit_applications.models import CreditApplication
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 from .models import ModelVersion, Prediction
 
@@ -105,11 +104,7 @@ class PredictionTests(APITestCase):
             "1.0.0",
         )
 
-        self.assertTrue(
-            ModelVersion.objects.filter(
-                is_active=True
-            ).exists()
-        )
+        self.assertTrue(ModelVersion.objects.filter(is_active=True).exists())
 
         self.application.refresh_from_db()
 
@@ -141,9 +136,7 @@ class PredictionTests(APITestCase):
 
         prediction = Prediction.objects.get()
 
-        self.assertIsNone(
-            prediction.credit_application
-        )
+        self.assertIsNone(prediction.credit_application)
         self.assertEqual(
             prediction.institution,
             self.institution,
@@ -164,9 +157,7 @@ class PredictionTests(APITestCase):
         )
 
     def test_applicant_cannot_run_prediction(self):
-        self.client.force_authenticate(
-            user=self.applicant_user
-        )
+        self.client.force_authenticate(user=self.applicant_user)
 
         response = self.client.post(
             reverse("prediction-list"),
@@ -252,9 +243,7 @@ class PredictionTests(APITestCase):
 
         self.client.force_authenticate(user=self.other_agent)
 
-        response = self.client.get(
-            reverse("prediction-list")
-        )
+        response = self.client.get(reverse("prediction-list"))
 
         self.assertEqual(
             response.status_code,

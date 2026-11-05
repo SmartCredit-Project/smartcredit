@@ -2,12 +2,10 @@ from functools import lru_cache
 
 import joblib
 import pandas as pd
-
 from django.conf import settings
 from django.db import transaction
 
 from ..models import ModelVersion, Prediction
-
 
 # ============================================================
 # 1. CONFIGURATION
@@ -31,14 +29,13 @@ REQUIRED_FEATURES = [
 # 2. CHARGEMENT DU MODELE
 # ============================================================
 
+
 @lru_cache(maxsize=1)
 def load_model():
     """Charge le modèle une seule fois puis le conserve en cache."""
 
     if not MODEL_PATH.exists():
-        raise FileNotFoundError(
-            f"Modèle introuvable : {MODEL_PATH}"
-        )
+        raise FileNotFoundError(f"Modèle introuvable : {MODEL_PATH}")
 
     artifact = joblib.load(MODEL_PATH)
 
@@ -52,6 +49,7 @@ def load_model():
 # ============================================================
 # 3. INFORMATIONS SUR LE MODELE
 # ============================================================
+
 
 def get_model_info():
     artifact, pipeline, threshold, features = load_model()
@@ -105,24 +103,18 @@ def get_active_model_version():
     }
 
     with transaction.atomic():
-        model_version, created = (
-            ModelVersion.objects.get_or_create(
-                name=artifact["model_name"],
-                version=MODEL_VERSION,
-                defaults=defaults,
-            )
+        model_version, created = ModelVersion.objects.get_or_create(
+            name=artifact["model_name"],
+            version=MODEL_VERSION,
+            defaults=defaults,
         )
 
         if created or not model_version.is_active:
-            ModelVersion.objects.exclude(
-                pk=model_version.pk
-            ).update(is_active=False)
+            ModelVersion.objects.exclude(pk=model_version.pk).update(is_active=False)
 
             if not model_version.is_active:
                 model_version.is_active = True
-                model_version.save(
-                    update_fields=["is_active"]
-                )
+                model_version.save(update_fields=["is_active"])
 
         if not created and metrics:
             updated_fields = []
@@ -135,17 +127,12 @@ def get_active_model_version():
             ]:
                 value = metrics.get(field)
 
-                if (
-                    value is not None
-                    and getattr(model_version, field) is None
-                ):
+                if value is not None and getattr(model_version, field) is None:
                     setattr(model_version, field, value)
                     updated_fields.append(field)
 
             if updated_fields:
-                model_version.save(
-                    update_fields=updated_fields
-                )
+                model_version.save(update_fields=updated_fields)
 
     return model_version
 
@@ -153,6 +140,7 @@ def get_active_model_version():
 # ============================================================
 # 4. NIVEAU DE RISQUE
 # ============================================================
+
 
 def get_risk_level(default_probability):
     medium_threshold = settings.RISK_THRESHOLDS["MEDIUM"]
@@ -169,15 +157,9 @@ def get_risk_level(default_probability):
 
 def get_risk_message(risk_level):
     messages = {
-        Prediction.RiskLevel.LOW: (
-            "Risque faible de défaut de remboursement."
-        ),
-        Prediction.RiskLevel.MEDIUM: (
-            "Risque modéré de défaut de remboursement."
-        ),
-        Prediction.RiskLevel.HIGH: (
-            "Risque élevé de défaut de remboursement."
-        ),
+        Prediction.RiskLevel.LOW: ("Risque faible de défaut de remboursement."),
+        Prediction.RiskLevel.MEDIUM: ("Risque modéré de défaut de remboursement."),
+        Prediction.RiskLevel.HIGH: ("Risque élevé de défaut de remboursement."),
     }
 
     return messages.get(
@@ -190,39 +172,36 @@ def get_risk_message(risk_level):
 # 5. PREPARATION DES DONNEES
 # ============================================================
 
+
 def prepare_input_data(application_data):
     """Construit le DataFrame attendu par le pipeline final."""
 
     missing = [
-        feature
-        for feature in REQUIRED_FEATURES
-        if feature not in application_data
+        feature for feature in REQUIRED_FEATURES if feature not in application_data
     ]
 
     if missing:
         raise ValueError(
-            "Caractéristiques manquantes pour la prédiction : "
-            f"{missing}"
+            "Caractéristiques manquantes pour la prédiction : " f"{missing}"
         )
 
     loan_percent_income = (
-        application_data["loan_amnt"]
-        / application_data["person_income"]
+        application_data["loan_amnt"] / application_data["person_income"]
     )
 
-    input_data = pd.DataFrame([{
-        "person_age": application_data["person_age"],
-        "person_income": application_data["person_income"],
-        "person_home_ownership": (
-            application_data["person_home_ownership"]
-        ),
-        "person_emp_length": (
-            application_data["person_emp_length"]
-        ),
-        "loan_intent": application_data["loan_intent"],
-        "loan_amnt": application_data["loan_amnt"],
-        "loan_percent_income": loan_percent_income,
-    }])
+    input_data = pd.DataFrame(
+        [
+            {
+                "person_age": application_data["person_age"],
+                "person_income": application_data["person_income"],
+                "person_home_ownership": (application_data["person_home_ownership"]),
+                "person_emp_length": (application_data["person_emp_length"]),
+                "loan_intent": application_data["loan_intent"],
+                "loan_amnt": application_data["loan_amnt"],
+                "loan_percent_income": loan_percent_income,
+            }
+        ]
+    )
 
     return input_data, loan_percent_income
 
@@ -230,6 +209,7 @@ def prepare_input_data(application_data):
 # ============================================================
 # 6. PREDICTION
 # ============================================================
+
 
 def predict_credit(application_data):
     """Exécute le modèle et retourne le résultat interprété."""
@@ -241,9 +221,7 @@ def predict_credit(application_data):
         model_features,
     ) = load_model()
 
-    input_data, loan_percent_income = prepare_input_data(
-        application_data
-    )
+    input_data, loan_percent_income = prepare_input_data(application_data)
 
     input_data = input_data[model_features]
 
@@ -253,9 +231,7 @@ def predict_credit(application_data):
 
     default_probability = float(probabilities[class_index])
 
-    predicted_class = int(
-        default_probability >= threshold
-    )
+    predicted_class = int(default_probability >= threshold)
 
     risk_level = get_risk_level(default_probability)
 
@@ -281,12 +257,8 @@ def predict_credit(application_data):
         "features": {
             "person_age": application_data["person_age"],
             "person_income": application_data["person_income"],
-            "person_home_ownership": (
-                application_data["person_home_ownership"]
-            ),
-            "person_emp_length": (
-                application_data["person_emp_length"]
-            ),
+            "person_home_ownership": (application_data["person_home_ownership"]),
+            "person_emp_length": (application_data["person_emp_length"]),
             "loan_intent": application_data["loan_intent"],
             "loan_amnt": application_data["loan_amnt"],
             "loan_percent_income": round(
@@ -326,9 +298,7 @@ def predict_and_save(
         institution=institution,
         predicted_class=result["predicted_class"],
         default_probability=result["default_probability"],
-        no_default_probability=(
-            result["no_default_probability"]
-        ),
+        no_default_probability=(result["no_default_probability"]),
         risk_level=result["risk_level"],
         model_version=model_version,
         features=result["features"],
@@ -342,11 +312,7 @@ def predict_and_save(
             credit_application.Status.IN_ANALYSIS,
         ]
     ):
-        credit_application.status = (
-            credit_application.Status.ANALYZED
-        )
-        credit_application.save(
-            update_fields=["status", "updated_at"]
-        )
+        credit_application.status = credit_application.Status.ANALYZED
+        credit_application.save(update_fields=["status", "updated_at"])
 
     return prediction, result

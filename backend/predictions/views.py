@@ -1,19 +1,15 @@
 import logging
 
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema
-from rest_framework import mixins, status, viewsets
-from rest_framework.decorators import (
-    api_view,
-    permission_classes,
-)
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-
 from accounts.audit import is_feature_enabled, log_activity
 from accounts.models import ActivityLog
 from accounts.permissions import IsAdminOrSuperAdmin, IsStaffRole
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
 from .models import ModelVersion, Prediction
 from .serializers import (
@@ -26,7 +22,6 @@ from .services.prediction_service import (
     get_model_info,
     predict_and_save,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -106,10 +101,7 @@ class PredictionViewSet(
         else:
             permission_classes = [IsAuthenticated]
 
-        return [
-            permission()
-            for permission in permission_classes
-        ]
+        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
         queryset = Prediction.objects.select_related(
@@ -129,30 +121,18 @@ class PredictionViewSet(
             if not user.institution_id:
                 return queryset.none()
 
-            queryset = queryset.filter(
-                institution_id=user.institution_id
-            )
+            queryset = queryset.filter(institution_id=user.institution_id)
 
         else:
-            queryset = queryset.filter(
-                credit_application__applicant__user=user
-            )
+            queryset = queryset.filter(credit_application__applicant__user=user)
 
-        risk_level = self.request.query_params.get(
-            "risk_level"
-        )
+        risk_level = self.request.query_params.get("risk_level")
         if risk_level:
-            queryset = queryset.filter(
-                risk_level=risk_level
-            )
+            queryset = queryset.filter(risk_level=risk_level)
 
-        application_id = self.request.query_params.get(
-            "credit_application"
-        )
+        application_id = self.request.query_params.get("credit_application")
         if application_id:
-            queryset = queryset.filter(
-                credit_application_id=application_id
-            )
+            queryset = queryset.filter(credit_application_id=application_id)
 
         return queryset.order_by("-created_at")
 
@@ -163,28 +143,15 @@ class PredictionViewSet(
     def create(self, request, *args, **kwargs):
         if not is_feature_enabled("predictions", default=True):
             return Response(
-                {
-                    "detail": (
-                        "La fonctionnalité de prédiction est "
-                        "désactivée."
-                    )
-                },
+                {"detail": ("La fonctionnalité de prédiction est " "désactivée.")},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        request_serializer = PredictionRequestSerializer(
-            data=request.data
-        )
+        request_serializer = PredictionRequestSerializer(data=request.data)
 
-        request_serializer.is_valid(
-            raise_exception=True
-        )
+        request_serializer.is_valid(raise_exception=True)
 
-        credit_application = (
-            request_serializer.validated_data.get(
-                "credit_application"
-            )
-        )
+        credit_application = request_serializer.validated_data.get("credit_application")
 
         user = request.user
 
@@ -192,26 +159,17 @@ class PredictionViewSet(
             if user.is_superadmin:
                 allowed = True
 
-            elif (
-                user.is_institution_admin
-                or user.is_credit_agent
-            ):
+            elif user.is_institution_admin or user.is_credit_agent:
                 allowed = bool(
                     user.institution_id
-                    and credit_application.institution_id
-                    == user.institution_id
+                    and credit_application.institution_id == user.institution_id
                 )
 
             else:
-                allowed = (
-                    credit_application.applicant.user_id
-                    == user.id
-                )
+                allowed = credit_application.applicant.user_id == user.id
 
             if not allowed:
-                raise PermissionDenied(
-                    "Vous ne pouvez pas analyser cette demande."
-                )
+                raise PermissionDenied("Vous ne pouvez pas analyser cette demande.")
 
         features = request_serializer.get_features()
 
@@ -227,9 +185,7 @@ class PredictionViewSet(
 
             return Response(
                 {
-                    "detail": (
-                        "Le modèle de prédiction est indisponible."
-                    ),
+                    "detail": ("Le modèle de prédiction est indisponible."),
                     "error": str(error),
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -238,9 +194,7 @@ class PredictionViewSet(
         except ValueError as error:
             return Response(
                 {
-                    "detail": (
-                        "Les données de prédiction sont invalides."
-                    ),
+                    "detail": ("Les données de prédiction sont invalides."),
                     "error": str(error),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -269,17 +223,13 @@ class PredictionViewSet(
             ),
             metadata={
                 "risk_level": prediction.risk_level,
-                "default_probability": (
-                    prediction.default_probability
-                ),
+                "default_probability": (prediction.default_probability),
             },
             request=request,
         )
 
         response_data = PredictionSerializer(prediction).data
-        response_data["decision_threshold"] = result[
-            "decision_threshold"
-        ]
+        response_data["decision_threshold"] = result["decision_threshold"]
         response_data["disclaimer"] = result["disclaimer"]
 
         return Response(

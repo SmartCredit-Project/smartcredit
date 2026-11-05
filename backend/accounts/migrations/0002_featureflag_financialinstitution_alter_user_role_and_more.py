@@ -27,8 +27,7 @@ def create_feature_flags(apps, schema_editor):
         defaults={
             "name": "Prédictions de risque",
             "description": (
-                "Autorise l'exécution de prédictions de risque "
-                "de crédit."
+                "Autorise l'exécution de prédictions de risque " "de crédit."
             ),
             "is_enabled": True,
         },
@@ -38,75 +37,241 @@ def create_feature_flags(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0001_initial'),
+        ("accounts", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='FeatureFlag',
+            name="FeatureFlag",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('key', models.CharField(max_length=60, unique=True, verbose_name='clé')),
-                ('name', models.CharField(max_length=150, verbose_name='nom')),
-                ('description', models.TextField(blank=True, verbose_name='description')),
-                ('is_enabled', models.BooleanField(default=True, verbose_name='activée')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='date de création')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='date de mise à jour')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "key",
+                    models.CharField(max_length=60, unique=True, verbose_name="clé"),
+                ),
+                ("name", models.CharField(max_length=150, verbose_name="nom")),
+                (
+                    "description",
+                    models.TextField(blank=True, verbose_name="description"),
+                ),
+                (
+                    "is_enabled",
+                    models.BooleanField(default=True, verbose_name="activée"),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="date de création"
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="date de mise à jour"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'drapeau de fonctionnalité',
-                'verbose_name_plural': 'drapeaux de fonctionnalité',
-                'ordering': ['key'],
+                "verbose_name": "drapeau de fonctionnalité",
+                "verbose_name_plural": "drapeaux de fonctionnalité",
+                "ordering": ["key"],
             },
         ),
         migrations.CreateModel(
-            name='FinancialInstitution',
+            name="FinancialInstitution",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=150, unique=True, verbose_name='nom')),
-                ('code', models.CharField(help_text="Identifiant court et stable de l'institution.", max_length=30, unique=True, verbose_name='code')),
-                ('email', models.EmailField(blank=True, max_length=254, verbose_name='adresse électronique')),
-                ('phone', models.CharField(blank=True, max_length=30, verbose_name='téléphone')),
-                ('address', models.TextField(blank=True, verbose_name='adresse')),
-                ('is_active', models.BooleanField(default=True, verbose_name='institution active')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='date de création')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='date de mise à jour')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=150, unique=True, verbose_name="nom"),
+                ),
+                (
+                    "code",
+                    models.CharField(
+                        help_text="Identifiant court et stable de l'institution.",
+                        max_length=30,
+                        unique=True,
+                        verbose_name="code",
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        blank=True, max_length=254, verbose_name="adresse électronique"
+                    ),
+                ),
+                (
+                    "phone",
+                    models.CharField(
+                        blank=True, max_length=30, verbose_name="téléphone"
+                    ),
+                ),
+                ("address", models.TextField(blank=True, verbose_name="adresse")),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        default=True, verbose_name="institution active"
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="date de création"
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="date de mise à jour"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'institution financière',
-                'verbose_name_plural': 'institutions financières',
-                'ordering': ['name'],
+                "verbose_name": "institution financière",
+                "verbose_name_plural": "institutions financières",
+                "ordering": ["name"],
             },
         ),
         migrations.AlterField(
-            model_name='user',
-            name='role',
-            field=models.CharField(choices=[('SUPERADMIN', 'Super administrateur'), ('ADMIN', "Administrateur d'institution"), ('CREDIT_AGENT', 'Agent de crédit'), ('APPLICANT', 'Demandeur de crédit')], default='APPLICANT', max_length=20, verbose_name='rôle'),
+            model_name="user",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("SUPERADMIN", "Super administrateur"),
+                    ("ADMIN", "Administrateur d'institution"),
+                    ("CREDIT_AGENT", "Agent de crédit"),
+                    ("APPLICANT", "Demandeur de crédit"),
+                ],
+                default="APPLICANT",
+                max_length=20,
+                verbose_name="rôle",
+            ),
         ),
         migrations.CreateModel(
-            name='ActivityLog',
+            name="ActivityLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('action', models.CharField(choices=[('LOGIN', 'Connexion'), ('LOGOUT', 'Déconnexion'), ('REGISTERED', 'Inscription'), ('CREATED', 'Création'), ('UPDATED', 'Modification'), ('DELETED', 'Suppression'), ('DEACTIVATED', 'Désactivation'), ('ASSIGNED', 'Affectation'), ('STATUS_CHANGED', "Changement d'état"), ('PREDICTION', 'Prédiction')], db_index=True, max_length=30, verbose_name='action')),
-                ('entity_type', models.CharField(blank=True, max_length=60, verbose_name="type d'entité")),
-                ('entity_id', models.PositiveBigIntegerField(blank=True, null=True, verbose_name="identifiant de l'entité")),
-                ('description', models.TextField(blank=True, verbose_name='description')),
-                ('metadata', models.JSONField(blank=True, default=dict, verbose_name='métadonnées')),
-                ('ip_address', models.GenericIPAddressField(blank=True, null=True, verbose_name='adresse IP')),
-                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='date de création')),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='activity_logs', to=settings.AUTH_USER_MODEL, verbose_name='utilisateur')),
-                ('institution', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='activity_logs', to='accounts.financialinstitution', verbose_name='institution')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "action",
+                    models.CharField(
+                        choices=[
+                            ("LOGIN", "Connexion"),
+                            ("LOGOUT", "Déconnexion"),
+                            ("REGISTERED", "Inscription"),
+                            ("CREATED", "Création"),
+                            ("UPDATED", "Modification"),
+                            ("DELETED", "Suppression"),
+                            ("DEACTIVATED", "Désactivation"),
+                            ("ASSIGNED", "Affectation"),
+                            ("STATUS_CHANGED", "Changement d'état"),
+                            ("PREDICTION", "Prédiction"),
+                        ],
+                        db_index=True,
+                        max_length=30,
+                        verbose_name="action",
+                    ),
+                ),
+                (
+                    "entity_type",
+                    models.CharField(
+                        blank=True, max_length=60, verbose_name="type d'entité"
+                    ),
+                ),
+                (
+                    "entity_id",
+                    models.PositiveBigIntegerField(
+                        blank=True, null=True, verbose_name="identifiant de l'entité"
+                    ),
+                ),
+                (
+                    "description",
+                    models.TextField(blank=True, verbose_name="description"),
+                ),
+                (
+                    "metadata",
+                    models.JSONField(
+                        blank=True, default=dict, verbose_name="métadonnées"
+                    ),
+                ),
+                (
+                    "ip_address",
+                    models.GenericIPAddressField(
+                        blank=True, null=True, verbose_name="adresse IP"
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True,
+                        db_index=True,
+                        verbose_name="date de création",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="activity_logs",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="utilisateur",
+                    ),
+                ),
+                (
+                    "institution",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="activity_logs",
+                        to="accounts.financialinstitution",
+                        verbose_name="institution",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': "journal d'activité",
-                'verbose_name_plural': "journaux d'activité",
-                'ordering': ['-created_at'],
+                "verbose_name": "journal d'activité",
+                "verbose_name_plural": "journaux d'activité",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.AddField(
-            model_name='user',
-            name='institution',
-            field=models.ForeignKey(blank=True, help_text='Institution de rattachement pour les administrateurs et les agents de crédit.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='users', to='accounts.financialinstitution', verbose_name='institution'),
+            model_name="user",
+            name="institution",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Institution de rattachement pour les administrateurs et les agents de crédit.",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="users",
+                to="accounts.financialinstitution",
+                verbose_name="institution",
+            ),
         ),
         migrations.RunPython(
             migrate_roles,

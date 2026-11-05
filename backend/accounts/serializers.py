@@ -2,16 +2,9 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.serializers import (
-    TokenObtainPairSerializer,
-)
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import (
-    ActivityLog,
-    FeatureFlag,
-    FinancialInstitution,
-    User,
-)
+from .models import ActivityLog, FeatureFlag, FinancialInstitution, User
 
 
 class FinancialInstitutionSerializer(serializers.ModelSerializer):
@@ -147,9 +140,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
         requester = self._requester()
 
         if requester is None:
-            raise serializers.ValidationError(
-                "Un utilisateur authentifié est requis."
-            )
+            raise serializers.ValidationError("Un utilisateur authentifié est requis.")
 
         role = attrs.get(
             "role",
@@ -177,12 +168,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
                 User.Role.APPLICANT,
             ]:
                 raise serializers.ValidationError(
-                    {
-                        "role": (
-                            "Vous ne pouvez pas modifier cet "
-                            "utilisateur."
-                        )
-                    }
+                    {"role": ("Vous ne pouvez pas modifier cet " "utilisateur.")}
                 )
 
             attrs["institution"] = requester.institution
@@ -191,8 +177,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {
                         "institution": (
-                            "Votre compte n'est rattaché à aucune "
-                            "institution."
+                            "Votre compte n'est rattaché à aucune " "institution."
                         )
                     }
                 )
@@ -201,16 +186,16 @@ class UserAdminSerializer(serializers.ModelSerializer):
             if role == User.Role.SUPERADMIN:
                 attrs["institution"] = None
 
-            elif role in [
-                User.Role.ADMIN,
-                User.Role.CREDIT_AGENT,
-            ] and institution is None:
+            elif (
+                role
+                in [
+                    User.Role.ADMIN,
+                    User.Role.CREDIT_AGENT,
+                ]
+                and institution is None
+            ):
                 raise serializers.ValidationError(
-                    {
-                        "institution": (
-                            "Une institution est requise pour ce rôle."
-                        )
-                    }
+                    {"institution": ("Une institution est requise pour ce rôle.")}
                 )
 
         if (
@@ -291,11 +276,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError(
-                {
-                    "password_confirm": (
-                        "Les deux mots de passe ne correspondent pas."
-                    )
-                }
+                {"password_confirm": ("Les deux mots de passe ne correspondent pas.")}
             )
 
         validate_password(attrs["password"])
@@ -323,9 +304,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         if existing_profile is not None:
             existing_profile.user = user
-            existing_profile.save(
-                update_fields=["user", "updated_at"]
-            )
+            existing_profile.save(update_fields=["user", "updated_at"])
 
             if existing_profile.institution_id:
                 user.institution_id = existing_profile.institution_id
@@ -340,9 +319,7 @@ class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
 
-class CustomTokenObtainPairSerializer(
-    TokenObtainPairSerializer
-):
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Authentification par adresse électronique."""
 
     email = serializers.EmailField()

@@ -158,23 +158,14 @@ class Prediction(models.Model):
         verbose_name_plural = "prédictions"
 
     def __str__(self):
-        return (
-            f"Prédiction #{self.pk} - "
-            f"{self.get_risk_level_display()}"
-        )
+        return f"Prédiction #{self.pk} - " f"{self.get_risk_level_display()}"
 
     @property
     def message(self):
         messages = {
-            self.RiskLevel.LOW: (
-                "Risque faible de défaut de remboursement."
-            ),
-            self.RiskLevel.MEDIUM: (
-                "Risque modéré de défaut de remboursement."
-            ),
-            self.RiskLevel.HIGH: (
-                "Risque élevé de défaut de remboursement."
-            ),
+            self.RiskLevel.LOW: ("Risque faible de défaut de remboursement."),
+            self.RiskLevel.MEDIUM: ("Risque modéré de défaut de remboursement."),
+            self.RiskLevel.HIGH: ("Risque élevé de défaut de remboursement."),
         }
 
         return messages.get(

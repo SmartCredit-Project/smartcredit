@@ -8,20 +8,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_featureflag_financialinstitution_alter_user_role_and_more'),
-        ('applicants', '0001_initial'),
+        ("accounts", "0002_featureflag_financialinstitution_alter_user_role_and_more"),
+        ("applicants", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='applicant',
-            name='institution',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='applicants', to='accounts.financialinstitution', verbose_name='institution'),
+            model_name="applicant",
+            name="institution",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="applicants",
+                to="accounts.financialinstitution",
+                verbose_name="institution",
+            ),
         ),
         migrations.AlterField(
-            model_name='applicant',
-            name='user',
-            field=models.OneToOneField(blank=True, help_text='Compte utilisateur associé au demandeur, lorsque celui-ci consulte ses propres demandes.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='applicant_profile', to=settings.AUTH_USER_MODEL),
+            model_name="applicant",
+            name="user",
+            field=models.OneToOneField(
+                blank=True,
+                help_text="Compte utilisateur associé au demandeur, lorsque celui-ci consulte ses propres demandes.",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="applicant_profile",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

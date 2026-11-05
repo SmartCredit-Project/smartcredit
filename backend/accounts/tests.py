@@ -1,8 +1,7 @@
+from applicants.models import Applicant
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from applicants.models import Applicant
 
 from .models import FinancialInstitution, User
 
@@ -37,9 +36,7 @@ class AuthenticationTests(APITestCase):
 
         self.assertEqual(user.username, user.email)
         self.assertEqual(user.role, User.Role.APPLICANT)
-        self.assertTrue(
-            user.check_password("MotDePasse!2026")
-        )
+        self.assertTrue(user.check_password("MotDePasse!2026"))
 
     def test_register_cannot_self_assign_admin_role(self):
         response = self.client.post(
@@ -120,9 +117,7 @@ class AuthenticationTests(APITestCase):
         )
 
         self.client.credentials(
-            HTTP_AUTHORIZATION=(
-                f"Bearer {response.data['access']}"
-            )
+            HTTP_AUTHORIZATION=(f"Bearer {response.data['access']}")
         )
 
         me_response = self.client.get(reverse("me"))
@@ -224,10 +219,7 @@ class UserManagementTests(APITestCase):
         )
         self.assertEqual(response.data["count"], 2)
 
-        emails = {
-            row["email"]
-            for row in response.data["results"]
-        }
+        emails = {row["email"] for row in response.data["results"]}
 
         self.assertIn("admin@example.com", emails)
         self.assertIn("agent@example.com", emails)
@@ -270,9 +262,7 @@ class UserManagementTests(APITestCase):
             status.HTTP_201_CREATED,
         )
 
-        user = User.objects.get(
-            email="nouvel.agent@example.com"
-        )
+        user = User.objects.get(email="nouvel.agent@example.com")
 
         self.assertEqual(user.institution, self.institution)
         self.assertEqual(user.role, User.Role.CREDIT_AGENT)
@@ -289,9 +279,7 @@ class UserManagementTests(APITestCase):
 
         self.client.force_authenticate(user=self.admin)
 
-        response = self.client.delete(
-            reverse("user-detail", args=[other_admin.id])
-        )
+        response = self.client.delete(reverse("user-detail", args=[other_admin.id]))
 
         self.assertEqual(
             response.status_code,
@@ -304,9 +292,7 @@ class UserManagementTests(APITestCase):
     def test_admin_deactivates_agent(self):
         self.client.force_authenticate(user=self.admin)
 
-        response = self.client.delete(
-            reverse("user-detail", args=[self.agent.id])
-        )
+        response = self.client.delete(reverse("user-detail", args=[self.agent.id]))
 
         self.assertEqual(
             response.status_code,

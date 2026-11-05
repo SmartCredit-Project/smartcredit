@@ -1,7 +1,5 @@
 from rest_framework import serializers
 
-from accounts.models import User
-
 from .models import Applicant
 
 
@@ -48,9 +46,7 @@ class ApplicantSerializer(serializers.ModelSerializer):
         ]
 
     def validate_email(self, value):
-        query = Applicant.objects.filter(
-            email__iexact=value
-        )
+        query = Applicant.objects.filter(email__iexact=value)
 
         if self.instance:
             query = query.exclude(pk=self.instance.pk)

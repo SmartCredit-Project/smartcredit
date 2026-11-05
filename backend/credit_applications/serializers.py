@@ -1,6 +1,5 @@
-from rest_framework import serializers
-
 from accounts.models import User
+from rest_framework import serializers
 
 from .models import CreditApplication
 
@@ -75,8 +74,7 @@ class CreditApplicationSerializer(serializers.ModelSerializer):
         if user and user.is_applicant:
             if value.user_id != user.id:
                 raise serializers.ValidationError(
-                    "Vous ne pouvez créer une demande que pour "
-                    "votre propre profil."
+                    "Vous ne pouvez créer une demande que pour " "votre propre profil."
                 )
 
         return value
@@ -172,10 +170,7 @@ class CreditApplicationStatusSerializer(serializers.Serializer):
 
         if value not in allowed_transitions[current_status]:
             raise serializers.ValidationError(
-                (
-                    f"Transition impossible de "
-                    f"'{current_status}' vers '{value}'."
-                )
+                (f"Transition impossible de " f"'{current_status}' vers '{value}'.")
             )
 
         return value

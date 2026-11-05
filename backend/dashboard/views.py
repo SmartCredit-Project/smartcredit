@@ -1,26 +1,23 @@
 from datetime import timedelta
 
+from accounts.models import User
+from accounts.permissions import IsStaffRole
+from applicants.models import Applicant
+from credit_applications.models import CreditApplication
 from django.db.models import Avg, Count, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
+from predictions.models import ModelVersion, Prediction
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from accounts.models import User
-from accounts.permissions import IsStaffRole
-from applicants.models import Applicant
-from credit_applications.models import CreditApplication
-from predictions.models import ModelVersion, Prediction
 
 
 def group_counts(queryset, field):
     return {
         row[field]: row["count"]
-        for row in queryset.values(field).annotate(
-            count=Count("id")
-        )
+        for row in queryset.values(field).annotate(count=Count("id"))
     }
 
 
@@ -59,17 +56,13 @@ class DashboardOverviewView(APIView):
             user,
         )
 
-        active_model = ModelVersion.objects.filter(
-            is_active=True
-        ).first()
+        active_model = ModelVersion.objects.filter(is_active=True).first()
 
         return Response(
             {
                 "users": {
                     "total": users.count(),
-                    "active": users.filter(
-                        is_active=True
-                    ).count(),
+                    "active": users.filter(is_active=True).count(),
                     "by_role": group_counts(users, "role"),
                 },
                 "applicants": {
@@ -89,9 +82,7 @@ class DashboardOverviewView(APIView):
                         "risk_level",
                     ),
                     "average_default_probability": (
-                        predictions.aggregate(
-                            value=Avg("default_probability")
-                        )["value"]
+                        predictions.aggregate(value=Avg("default_probability"))["value"]
                     ),
                 },
                 "active_model": (
@@ -122,9 +113,7 @@ class PredictionStatsView(APIView):
 
         aggregates = queryset.aggregate(
             total=Count("id"),
-            average_default_probability=Avg(
-                "default_probability"
-            ),
+            average_default_probability=Avg("default_probability"),
         )
 
         last_30_days = timezone.now() - timedelta(days=30)
@@ -140,12 +129,8 @@ class PredictionStatsView(APIView):
         return Response(
             {
                 "total": aggregates["total"],
-                "predicted_default": queryset.filter(
-                    predicted_class=1
-                ).count(),
-                "predicted_no_default": queryset.filter(
-                    predicted_class=0
-                ).count(),
+                "predicted_default": queryset.filter(predicted_class=1).count(),
+                "predicted_no_default": queryset.filter(predicted_class=0).count(),
                 "high_risk": queryset.filter(
                     risk_level=Prediction.RiskLevel.HIGH
                 ).count(),
@@ -158,12 +143,8 @@ class PredictionStatsView(APIView):
                 ),
                 "by_model_version": [
                     {
-                        "model_version": row[
-                            "model_version__version"
-                        ],
-                        "model_name": row[
-                            "model_version__name"
-                        ],
+                        "model_version": row["model_version__version"],
+                        "model_name": row["model_version__name"],
                         "count": row["count"],
                     }
                     for row in queryset.values(
@@ -213,15 +194,9 @@ class ApplicationStatsView(APIView):
         return Response(
             {
                 "total": aggregates["total"],
-                "total_requested_amount": aggregates[
-                    "total_amount"
-                ],
-                "average_requested_amount": aggregates[
-                    "average_amount"
-                ],
-                "average_income": aggregates[
-                    "average_income"
-                ],
+                "total_requested_amount": aggregates["total_amount"],
+                "average_requested_amount": aggregates["average_amount"],
+                "average_income": aggregates["average_income"],
                 "by_status": group_counts(
                     queryset,
                     "status",

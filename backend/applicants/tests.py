@@ -1,8 +1,7 @@
+from accounts.models import FinancialInstitution, User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from accounts.models import FinancialInstitution, User
 
 from .models import Applicant
 
@@ -70,9 +69,7 @@ class ApplicantTests(APITestCase):
         self.assertEqual(applicant.institution, self.institution)
 
     def test_applicant_can_complete_own_profile(self):
-        self.client.force_authenticate(
-            user=self.applicant_user
-        )
+        self.client.force_authenticate(user=self.applicant_user)
 
         response = self.client.post(
             reverse("applicant-list"),
@@ -110,9 +107,7 @@ class ApplicantTests(APITestCase):
             email="demandeur@example.com",
         )
 
-        self.client.force_authenticate(
-            user=self.applicant_user
-        )
+        self.client.force_authenticate(user=self.applicant_user)
 
         response = self.client.post(
             reverse("applicant-list"),
@@ -145,13 +140,9 @@ class ApplicantTests(APITestCase):
             institution=self.institution,
         )
 
-        self.client.force_authenticate(
-            user=self.applicant_user
-        )
+        self.client.force_authenticate(user=self.applicant_user)
 
-        response = self.client.get(
-            reverse("applicant-list")
-        )
+        response = self.client.get(reverse("applicant-list"))
 
         self.assertEqual(
             response.status_code,
@@ -180,9 +171,7 @@ class ApplicantTests(APITestCase):
 
         self.client.force_authenticate(user=self.agent)
 
-        response = self.client.get(
-            reverse("applicant-list")
-        )
+        response = self.client.get(reverse("applicant-list"))
 
         self.assertEqual(
             response.status_code,

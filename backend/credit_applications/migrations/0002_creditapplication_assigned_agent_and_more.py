@@ -8,25 +8,41 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_featureflag_financialinstitution_alter_user_role_and_more'),
-        ('credit_applications', '0001_initial'),
+        ("accounts", "0002_featureflag_financialinstitution_alter_user_role_and_more"),
+        ("credit_applications", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='creditapplication',
-            name='assigned_agent',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='assigned_credit_applications', to=settings.AUTH_USER_MODEL, verbose_name='agent assigné'),
+            model_name="creditapplication",
+            name="assigned_agent",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="assigned_credit_applications",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="agent assigné",
+            ),
         ),
         migrations.AddField(
-            model_name='creditapplication',
-            name='assigned_at',
-            field=models.DateTimeField(blank=True, null=True, verbose_name="date d'affectation"),
+            model_name="creditapplication",
+            name="assigned_at",
+            field=models.DateTimeField(
+                blank=True, null=True, verbose_name="date d'affectation"
+            ),
         ),
         migrations.AddField(
-            model_name='creditapplication',
-            name='institution',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='credit_applications', to='accounts.financialinstitution', verbose_name='institution'),
+            model_name="creditapplication",
+            name="institution",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="credit_applications",
+                to="accounts.financialinstitution",
+                verbose_name="institution",
+            ),
         ),
     ]

@@ -15,26 +15,89 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Applicant',
+            name="Applicant",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('first_name', models.CharField(max_length=100, verbose_name='prénom')),
-                ('last_name', models.CharField(max_length=100, verbose_name='nom')),
-                ('email', models.EmailField(max_length=254, unique=True, verbose_name='adresse électronique')),
-                ('phone', models.CharField(blank=True, max_length=30, verbose_name='téléphone')),
-                ('date_of_birth', models.DateField(blank=True, null=True, verbose_name='date de naissance')),
-                ('occupation', models.CharField(blank=True, max_length=150, verbose_name='profession')),
-                ('employer', models.CharField(blank=True, max_length=150, verbose_name='employeur')),
-                ('annual_income', models.FloatField(default=0, help_text='Revenu annuel déclaré par le demandeur.', verbose_name='revenu annuel')),
-                ('financial_situation', models.TextField(blank=True, verbose_name='situation financière')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='date de création')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='date de mise à jour')),
-                ('user', models.ForeignKey(blank=True, help_text='Compte utilisateur associé au demandeur, lorsque celui-ci consulte ses propres demandes.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='applicant_profiles', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("first_name", models.CharField(max_length=100, verbose_name="prénom")),
+                ("last_name", models.CharField(max_length=100, verbose_name="nom")),
+                (
+                    "email",
+                    models.EmailField(
+                        max_length=254, unique=True, verbose_name="adresse électronique"
+                    ),
+                ),
+                (
+                    "phone",
+                    models.CharField(
+                        blank=True, max_length=30, verbose_name="téléphone"
+                    ),
+                ),
+                (
+                    "date_of_birth",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="date de naissance"
+                    ),
+                ),
+                (
+                    "occupation",
+                    models.CharField(
+                        blank=True, max_length=150, verbose_name="profession"
+                    ),
+                ),
+                (
+                    "employer",
+                    models.CharField(
+                        blank=True, max_length=150, verbose_name="employeur"
+                    ),
+                ),
+                (
+                    "annual_income",
+                    models.FloatField(
+                        default=0,
+                        help_text="Revenu annuel déclaré par le demandeur.",
+                        verbose_name="revenu annuel",
+                    ),
+                ),
+                (
+                    "financial_situation",
+                    models.TextField(blank=True, verbose_name="situation financière"),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="date de création"
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="date de mise à jour"
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Compte utilisateur associé au demandeur, lorsque celui-ci consulte ses propres demandes.",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="applicant_profiles",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'demandeur',
-                'verbose_name_plural': 'demandeurs',
-                'ordering': ['-created_at'],
+                "verbose_name": "demandeur",
+                "verbose_name_plural": "demandeurs",
+                "ordering": ["-created_at"],
             },
         ),
     ]

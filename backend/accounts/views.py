@@ -71,9 +71,7 @@ class LoginView(TokenObtainPairView):
 
         if response.status_code == status.HTTP_200_OK:
             email = request.data.get("email", "")
-            user = User.objects.filter(
-                email__iexact=email
-            ).first()
+            user = User.objects.filter(email__iexact=email).first()
 
             if user is not None:
                 log_activity(
@@ -102,11 +100,7 @@ class LogoutView(APIView):
 
         if not refresh_token:
             return Response(
-                {
-                    "detail": (
-                        "Le token de rafraîchissement est requis."
-                    )
-                },
+                {"detail": ("Le token de rafraîchissement est requis.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -162,9 +156,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserAdminSerializer
 
     def get_queryset(self):
-        queryset = User.objects.select_related(
-            "institution"
-        ).order_by("-date_joined")
+        queryset = User.objects.select_related("institution").order_by("-date_joined")
 
         user = self.request.user
 
@@ -172,9 +164,7 @@ class UserViewSet(viewsets.ModelViewSet):
             if not user.institution_id:
                 return queryset.none()
 
-            queryset = queryset.filter(
-                institution_id=user.institution_id
-            )
+            queryset = queryset.filter(institution_id=user.institution_id)
 
         role = self.request.query_params.get("role")
         if role:
@@ -227,19 +217,11 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if user.is_superadmin:
             return Response(
-                {
-                    "detail": (
-                        "Un super administrateur ne peut pas être "
-                        "désactivé."
-                    )
-                },
+                {"detail": ("Un super administrateur ne peut pas être " "désactivé.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if (
-            not request.user.is_superadmin
-            and user.role != User.Role.CREDIT_AGENT
-        ):
+        if not request.user.is_superadmin and user.role != User.Role.CREDIT_AGENT:
             return Response(
                 {
                     "detail": (
@@ -283,10 +265,7 @@ class FinancialInstitutionViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [IsSuperAdmin]
 
-        return [
-            permission()
-            for permission in permission_classes
-        ]
+        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
         queryset = FinancialInstitution.objects.all()
@@ -323,9 +302,7 @@ class FinancialInstitutionViewSet(viewsets.ModelViewSet):
             institution=institution,
             entity_type="FinancialInstitution",
             entity_id=institution.id,
-            description=(
-                f"Mise à jour de l'institution {institution.name}."
-            ),
+            description=(f"Mise à jour de l'institution {institution.name}."),
             request=self.request,
         )
 
@@ -336,9 +313,7 @@ class FinancialInstitutionViewSet(viewsets.ModelViewSet):
             institution=instance,
             entity_type="FinancialInstitution",
             entity_id=instance.id,
-            description=(
-                f"Suppression de l'institution {instance.name}."
-            ),
+            description=(f"Suppression de l'institution {instance.name}."),
             request=self.request,
         )
 
@@ -369,21 +344,15 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
             if not user.institution_id:
                 return queryset.none()
 
-            queryset = queryset.filter(
-                institution_id=user.institution_id
-            )
+            queryset = queryset.filter(institution_id=user.institution_id)
 
         action = self.request.query_params.get("action")
         if action:
             queryset = queryset.filter(action=action)
 
-        entity_type = self.request.query_params.get(
-            "entity_type"
-        )
+        entity_type = self.request.query_params.get("entity_type")
         if entity_type:
-            queryset = queryset.filter(
-                entity_type=entity_type
-            )
+            queryset = queryset.filter(entity_type=entity_type)
 
         user_id = self.request.query_params.get("user")
         if user_id:
@@ -409,10 +378,7 @@ class FeatureFlagViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [IsSuperAdmin]
 
-        return [
-            permission()
-            for permission in permission_classes
-        ]
+        return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
         flag = serializer.save()

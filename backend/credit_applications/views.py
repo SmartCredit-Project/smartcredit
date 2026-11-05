@@ -1,17 +1,14 @@
+from accounts.audit import log_activity
+from accounts.models import ActivityLog
+from accounts.permissions import IsAdminOrSuperAdmin, IsStaffRole
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
-from rest_framework import status as http_status, viewsets
+from rest_framework import status as http_status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from accounts.audit import log_activity
-from accounts.models import ActivityLog
-from accounts.permissions import (
-    IsAdminOrSuperAdmin,
-    IsStaffRole,
-)
 
 from .models import CreditApplication
 from .serializers import (
@@ -41,10 +38,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [IsAuthenticated]
 
-        return [
-            permission()
-            for permission in permission_classes
-        ]
+        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
         queryset = CreditApplication.objects.select_related(
@@ -64,46 +58,26 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
             if not user.institution_id:
                 return queryset.none()
 
-            queryset = queryset.filter(
-                institution_id=user.institution_id
-            )
+            queryset = queryset.filter(institution_id=user.institution_id)
 
         else:
-            queryset = queryset.filter(
-                applicant__user=user
-            )
+            queryset = queryset.filter(applicant__user=user)
 
-        application_status = self.request.query_params.get(
-            "status"
-        )
+        application_status = self.request.query_params.get("status")
         if application_status:
-            queryset = queryset.filter(
-                status=application_status
-            )
+            queryset = queryset.filter(status=application_status)
 
-        applicant_id = self.request.query_params.get(
-            "applicant"
-        )
+        applicant_id = self.request.query_params.get("applicant")
         if applicant_id:
-            queryset = queryset.filter(
-                applicant_id=applicant_id
-            )
+            queryset = queryset.filter(applicant_id=applicant_id)
 
-        loan_intent = self.request.query_params.get(
-            "loan_intent"
-        )
+        loan_intent = self.request.query_params.get("loan_intent")
         if loan_intent:
-            queryset = queryset.filter(
-                loan_intent=loan_intent
-            )
+            queryset = queryset.filter(loan_intent=loan_intent)
 
-        assigned_agent = self.request.query_params.get(
-            "assigned_agent"
-        )
+        assigned_agent = self.request.query_params.get("assigned_agent")
         if assigned_agent:
-            queryset = queryset.filter(
-                assigned_agent_id=assigned_agent
-            )
+            queryset = queryset.filter(assigned_agent_id=assigned_agent)
 
         return queryset.order_by("-created_at")
 
@@ -114,8 +88,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
         if requester.is_applicant:
             if applicant.user_id != requester.id:
                 raise PermissionDenied(
-                    "Vous ne pouvez créer une demande que pour "
-                    "votre propre profil."
+                    "Vous ne pouvez créer une demande que pour " "votre propre profil."
                 )
 
             institution = applicant.institution
@@ -131,9 +104,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
                 )
 
         elif requester.is_superadmin:
-            institution = (
-                applicant.institution or requester.institution
-            )
+            institution = applicant.institution or requester.institution
 
         else:
             if not requester.institution_id:
@@ -141,10 +112,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
                     "Votre compte n'est rattaché à aucune institution."
                 )
 
-            if (
-                applicant.institution_id
-                != requester.institution_id
-            ):
+            if applicant.institution_id != requester.institution_id:
                 raise PermissionDenied(
                     "Ce demandeur n'appartient pas à votre institution."
                 )
@@ -162,9 +130,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
             institution=institution,
             entity_type="CreditApplication",
             entity_id=application.id,
-            description=(
-                f"Création de la demande #{application.id}."
-            ),
+            description=(f"Création de la demande #{application.id}."),
             request=self.request,
         )
 
@@ -175,8 +141,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
         if requester.is_applicant:
             if instance.status != CreditApplication.Status.PENDING:
                 raise PermissionDenied(
-                    "Une demande en cours de traitement ne peut "
-                    "plus être modifiée."
+                    "Une demande en cours de traitement ne peut " "plus être modifiée."
                 )
 
         application = serializer.save()
@@ -187,9 +152,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
             institution=application.institution,
             entity_type="CreditApplication",
             entity_id=application.id,
-            description=(
-                f"Mise à jour de la demande #{application.id}."
-            ),
+            description=(f"Mise à jour de la demande #{application.id}."),
             request=self.request,
         )
 
@@ -200,9 +163,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
             institution=instance.institution,
             entity_type="CreditApplication",
             entity_id=instance.id,
-            description=(
-                f"Suppression de la demande #{instance.id}."
-            ),
+            description=(f"Suppression de la demande #{instance.id}."),
             request=self.request,
         )
 
@@ -233,9 +194,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
         previous_status = application.status
 
         application.status = serializer.validated_data["status"]
-        application.save(
-            update_fields=["status", "updated_at"]
-        )
+        application.save(update_fields=["status", "updated_at"])
 
         log_activity(
             action=ActivityLog.Action.STATUS_CHANGED,
@@ -284,9 +243,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
         agent = serializer.validated_data.get("assigned_agent")
 
         application.assigned_agent = agent
-        application.assigned_at = (
-            timezone.now() if agent is not None else None
-        )
+        application.assigned_at = timezone.now() if agent is not None else None
         application.save(
             update_fields=[
                 "assigned_agent",
@@ -305,11 +262,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
                 f"Demande #{application.id} affectée à "
                 f"{agent.email if agent else 'personne'}."
             ),
-            metadata={
-                "assigned_agent": (
-                    agent.id if agent is not None else None
-                )
-            },
+            metadata={"assigned_agent": (agent.id if agent is not None else None)},
             request=request,
         )
 
@@ -333,8 +286,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
         application = self.get_object()
 
         latest_prediction = (
-            application.predictions
-            .select_related("model_version", "created_by")
+            application.predictions.select_related("model_version", "created_by")
             .order_by("-created_at")
             .first()
         )
@@ -350,6 +302,4 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
                 status=http_status.HTTP_404_NOT_FOUND,
             )
 
-        return Response(
-            PredictionSerializer(latest_prediction).data
-        )
+        return Response(PredictionSerializer(latest_prediction).data)

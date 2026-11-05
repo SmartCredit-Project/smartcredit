@@ -1,9 +1,8 @@
+from accounts.models import FinancialInstitution, User
+from applicants.models import Applicant
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from accounts.models import FinancialInstitution, User
-from applicants.models import Applicant
 
 from .models import CreditApplication
 
@@ -117,9 +116,7 @@ class CreditApplicationTests(APITestCase):
         )
 
     def test_applicant_can_create_own_application(self):
-        self.client.force_authenticate(
-            user=self.applicant_user
-        )
+        self.client.force_authenticate(user=self.applicant_user)
 
         response = self.client.post(
             reverse("credit-application-list"),
@@ -144,9 +141,7 @@ class CreditApplicationTests(APITestCase):
         )
 
     def test_applicant_cannot_create_for_another_profile(self):
-        self.client.force_authenticate(
-            user=self.applicant_user
-        )
+        self.client.force_authenticate(user=self.applicant_user)
 
         response = self.client.post(
             reverse("credit-application-list"),
@@ -204,9 +199,7 @@ class CreditApplicationTests(APITestCase):
             created_by=self.applicant_user,
         )
 
-        self.client.force_authenticate(
-            user=self.applicant_user
-        )
+        self.client.force_authenticate(user=self.applicant_user)
 
         response = self.client.patch(
             reverse(
@@ -236,9 +229,7 @@ class CreditApplicationTests(APITestCase):
             status=CreditApplication.Status.IN_ANALYSIS,
         )
 
-        self.client.force_authenticate(
-            user=self.applicant_user
-        )
+        self.client.force_authenticate(user=self.applicant_user)
 
         response = self.client.patch(
             reverse(
@@ -407,13 +398,9 @@ class CreditApplicationTests(APITestCase):
             created_by=self.other_agent,
         )
 
-        self.client.force_authenticate(
-            user=self.applicant_user
-        )
+        self.client.force_authenticate(user=self.applicant_user)
 
-        response = self.client.get(
-            reverse("credit-application-list")
-        )
+        response = self.client.get(reverse("credit-application-list"))
 
         self.assertEqual(
             response.status_code,
@@ -452,9 +439,7 @@ class CreditApplicationTests(APITestCase):
 
         self.client.force_authenticate(user=self.agent)
 
-        response = self.client.get(
-            reverse("credit-application-list")
-        )
+        response = self.client.get(reverse("credit-application-list"))
 
         self.assertEqual(
             response.status_code,

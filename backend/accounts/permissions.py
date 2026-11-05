@@ -9,11 +9,7 @@ class IsSuperAdmin(BasePermission):
     def has_permission(self, request, view):
         user = request.user
 
-        return bool(
-            user
-            and user.is_authenticated
-            and user.is_superadmin
-        )
+        return bool(user and user.is_authenticated and user.is_superadmin)
 
 
 class IsAdminOrSuperAdmin(BasePermission):
@@ -30,10 +26,7 @@ class IsAdminOrSuperAdmin(BasePermission):
         return bool(
             user
             and user.is_authenticated
-            and (
-                user.is_superadmin
-                or user.is_institution_admin
-            )
+            and (user.is_superadmin or user.is_institution_admin)
         )
 
 
@@ -48,11 +41,7 @@ class IsStaffRole(BasePermission):
     def has_permission(self, request, view):
         user = request.user
 
-        return bool(
-            user
-            and user.is_authenticated
-            and user.is_staff_role
-        )
+        return bool(user and user.is_authenticated and user.is_staff_role)
 
 
 class IsStaffRoleOrReadOnly(BasePermission):

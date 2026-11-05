@@ -125,10 +125,7 @@ class User(AbstractUser):
 
     @property
     def is_superadmin(self):
-        return bool(
-            self.is_superuser
-            or self.role == self.Role.SUPERADMIN
-        )
+        return bool(self.is_superuser or self.role == self.Role.SUPERADMIN)
 
     @property
     def is_institution_admin(self):
@@ -145,9 +142,7 @@ class User(AbstractUser):
     @property
     def is_staff_role(self):
         return bool(
-            self.is_superadmin
-            or self.is_institution_admin
-            or self.is_credit_agent
+            self.is_superadmin or self.is_institution_admin or self.is_credit_agent
         )
 
 
@@ -232,10 +227,7 @@ class ActivityLog(models.Model):
         verbose_name_plural = "journaux d'activité"
 
     def __str__(self):
-        return (
-            f"{self.get_action_display()} "
-            f"({self.entity_type}#{self.entity_id})"
-        )
+        return f"{self.get_action_display()} " f"({self.entity_type}#{self.entity_id})"
 
 
 class FeatureFlag(models.Model):

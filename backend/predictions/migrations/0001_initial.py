@@ -11,50 +11,172 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('credit_applications', '0001_initial'),
+        ("credit_applications", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ModelVersion',
+            name="ModelVersion",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=150, verbose_name='nom du modèle')),
-                ('version', models.CharField(max_length=50, verbose_name='version')),
-                ('algorithm', models.CharField(blank=True, max_length=150, verbose_name='algorithme')),
-                ('accuracy', models.FloatField(blank=True, null=True, verbose_name='accuracy')),
-                ('precision', models.FloatField(blank=True, null=True, verbose_name='precision')),
-                ('recall', models.FloatField(blank=True, null=True, verbose_name='recall')),
-                ('roc_auc', models.FloatField(blank=True, null=True, verbose_name='ROC AUC')),
-                ('is_active', models.BooleanField(default=False, verbose_name='version active')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='date de création')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=150, verbose_name="nom du modèle"),
+                ),
+                ("version", models.CharField(max_length=50, verbose_name="version")),
+                (
+                    "algorithm",
+                    models.CharField(
+                        blank=True, max_length=150, verbose_name="algorithme"
+                    ),
+                ),
+                (
+                    "accuracy",
+                    models.FloatField(blank=True, null=True, verbose_name="accuracy"),
+                ),
+                (
+                    "precision",
+                    models.FloatField(blank=True, null=True, verbose_name="precision"),
+                ),
+                (
+                    "recall",
+                    models.FloatField(blank=True, null=True, verbose_name="recall"),
+                ),
+                (
+                    "roc_auc",
+                    models.FloatField(blank=True, null=True, verbose_name="ROC AUC"),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(default=False, verbose_name="version active"),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="date de création"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'version de modèle',
-                'verbose_name_plural': 'versions de modèle',
-                'ordering': ['-is_active', '-created_at'],
-                'constraints': [models.UniqueConstraint(fields=('name', 'version'), name='unique_model_name_version')],
+                "verbose_name": "version de modèle",
+                "verbose_name_plural": "versions de modèle",
+                "ordering": ["-is_active", "-created_at"],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("name", "version"), name="unique_model_name_version"
+                    )
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Prediction',
+            name="Prediction",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('predicted_class', models.PositiveSmallIntegerField(verbose_name='classe prédite')),
-                ('default_probability', models.FloatField(validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(1)], verbose_name='probabilité de défaut')),
-                ('no_default_probability', models.FloatField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(1)], verbose_name="probabilité d'absence de défaut")),
-                ('risk_level', models.CharField(choices=[('LOW', 'Risque faible'), ('MEDIUM', 'Risque modéré'), ('HIGH', 'Risque élevé')], db_index=True, max_length=10, verbose_name='niveau de risque')),
-                ('features', models.JSONField(default=dict, verbose_name='caractéristiques analysées')),
-                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='date de prédiction')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='predictions', to=settings.AUTH_USER_MODEL)),
-                ('credit_application', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='predictions', to='credit_applications.creditapplication', verbose_name='demande de crédit')),
-                ('model_version', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='predictions', to='predictions.modelversion', verbose_name='version du modèle')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "predicted_class",
+                    models.PositiveSmallIntegerField(verbose_name="classe prédite"),
+                ),
+                (
+                    "default_probability",
+                    models.FloatField(
+                        validators=[
+                            django.core.validators.MinValueValidator(0),
+                            django.core.validators.MaxValueValidator(1),
+                        ],
+                        verbose_name="probabilité de défaut",
+                    ),
+                ),
+                (
+                    "no_default_probability",
+                    models.FloatField(
+                        blank=True,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(0),
+                            django.core.validators.MaxValueValidator(1),
+                        ],
+                        verbose_name="probabilité d'absence de défaut",
+                    ),
+                ),
+                (
+                    "risk_level",
+                    models.CharField(
+                        choices=[
+                            ("LOW", "Risque faible"),
+                            ("MEDIUM", "Risque modéré"),
+                            ("HIGH", "Risque élevé"),
+                        ],
+                        db_index=True,
+                        max_length=10,
+                        verbose_name="niveau de risque",
+                    ),
+                ),
+                (
+                    "features",
+                    models.JSONField(
+                        default=dict, verbose_name="caractéristiques analysées"
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True,
+                        db_index=True,
+                        verbose_name="date de prédiction",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="predictions",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "credit_application",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="predictions",
+                        to="credit_applications.creditapplication",
+                        verbose_name="demande de crédit",
+                    ),
+                ),
+                (
+                    "model_version",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="predictions",
+                        to="predictions.modelversion",
+                        verbose_name="version du modèle",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'prédiction',
-                'verbose_name_plural': 'prédictions',
-                'ordering': ['-created_at'],
+                "verbose_name": "prédiction",
+                "verbose_name_plural": "prédictions",
+                "ordering": ["-created_at"],
             },
         ),
     ]

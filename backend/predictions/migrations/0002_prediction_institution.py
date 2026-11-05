@@ -7,14 +7,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_featureflag_financialinstitution_alter_user_role_and_more'),
-        ('predictions', '0001_initial'),
+        ("accounts", "0002_featureflag_financialinstitution_alter_user_role_and_more"),
+        ("predictions", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prediction',
-            name='institution',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='predictions', to='accounts.financialinstitution', verbose_name='institution'),
+            model_name="prediction",
+            name="institution",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="predictions",
+                to="accounts.financialinstitution",
+                verbose_name="institution",
+            ),
         ),
     ]
