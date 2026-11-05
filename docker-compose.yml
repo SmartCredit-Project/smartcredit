@@ -1,16 +1,75 @@
 services:
-  smartcredit-api:
+
+  # ==========================================================
+  # 1. DJANGO REST FRAMEWORK
+  # ==========================================================
+
+  smartcredit-backend:
     build:
       context: .
       dockerfile: Dockerfile
 
-    container_name: smartcredit-api
+    container_name: smartcredit-backend
 
     ports:
       - "8000:8000"
 
     volumes:
-      - ./data:/app/data
-      - ./models:/app/models
+      - .:/app
+
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-django-insecure-smartcredit-dev-key}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-True}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,smartcredit-backend}
+
+      DB_NAME: ${DB_NAME:-smartcredit_db}
+      DB_USER: ${DB_USER:-smartcredit_user}
+      DB_PASSWORD: ${DB_PASSWORD:-smartcredit_dev_password}
+      DB_HOST: ${DB_HOST:-smartcredit-db}
+      DB_PORT: ${DB_PORT:-5432}
+
+      MODEL_PATH: ${MODEL_PATH:-/app/models/gradient_boosting_final.joblib}
+      RISK_THRESHOLD_MEDIUM: ${RISK_THRESHOLD_MEDIUM:-0.30}
+      RISK_THRESHOLD_HIGH: ${RISK_THRESHOLD_HIGH:-0.59}
+
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+    depends_on:
+      smartcredit-db:
+        condition: service_healthy
 
     restart: unless-stopped
+
+
+  # ==========================================================
+  # 2. POSTGRESQL
+  # ==========================================================
+
+  smartcredit-db:
+    image: postgres:17
+
+    container_name: smartcredit-db
+
+    environment:
+      POSTGRES_DB: ${DB_NAME:-smartcredit_db}
+      POSTGRES_USER: ${DB_USER:-smartcredit_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-smartcredit_dev_password}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+
+# ============================================================
+# 3. VOLUMES PERSISTANTS
+# ============================================================
+
+volumes:
+  postgres_data:

@@ -1,18 +1,16 @@
-
-from pathlib import Path
 import time
+from pathlib import Path
+
 import joblib
 import pandas as pd
-
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.utils.class_weight import compute_sample_weight
 
-from src.preprocessing.cleaning import clean_dataset
 from src.features.feature_selection import split_features_target
+from src.preprocessing.cleaning import clean_dataset
 from src.preprocessing.preprocessing import create_preprocessor
 from src.training.split_data import split_data
-
 
 # ============================================================
 # 1. CONFIGURATION
@@ -25,6 +23,8 @@ MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 MODEL_PATH = MODEL_DIR / "gradient_boosting_final.joblib"
 
+EVALUATION_PATH = Path("data") / "processed" / "final_test_evaluation.csv"
+
 RANDOM_STATE = 42
 
 # Seuil sélectionné précédemment avec les données d'entraînement
@@ -34,6 +34,7 @@ DECISION_THRESHOLD = 0.59
 # ============================================================
 # 2. CHARGEMENT ET PRÉPARATION DES DONNÉES
 # ============================================================
+
 
 def prepare_training_data():
 
@@ -63,6 +64,7 @@ def prepare_training_data():
 # 3. CRÉATION DU PIPELINE FINAL
 # ============================================================
 
+
 def create_final_pipeline():
 
     model = GradientBoostingClassifier(
@@ -74,10 +76,12 @@ def create_final_pipeline():
         random_state=RANDOM_STATE,
     )
 
-    pipeline = Pipeline(steps=[
-        ("preprocessor", create_preprocessor()),
-        ("model", model),
-    ])
+    pipeline = Pipeline(
+        steps=[
+            ("preprocessor", create_preprocessor()),
+            ("model", model),
+        ]
+    )
 
     return pipeline
 
@@ -85,6 +89,7 @@ def create_final_pipeline():
 # ============================================================
 # 4. ENTRAÎNEMENT DU MODÈLE
 # ============================================================
+
 
 def train_final_model(X_train, y_train):
 
@@ -120,10 +125,35 @@ def train_final_model(X_train, y_train):
 # 5. CONSTRUCTION DE L'ARTIFACT
 # ============================================================
 
+
+def load_evaluation_metrics(model_name):
+
+    if not EVALUATION_PATH.exists():
+        return {}
+
+    evaluation = pd.read_csv(EVALUATION_PATH)
+
+    matched_rows = evaluation[evaluation["Model"] == model_name]
+
+    if matched_rows.empty:
+        return {}
+
+    row = matched_rows.iloc[0]
+
+    return {
+        "accuracy": float(row["Accuracy"]),
+        "precision": float(row["Precision"]),
+        "recall": float(row["Recall"]),
+        "roc_auc": float(row["ROC_AUC"]),
+    }
+
+
 def create_model_artifact(pipeline, X_train):
 
+    model_name = "Gradient Boosting équilibré optimisé"
+
     artifact = {
-        "model_name": "Gradient Boosting équilibré optimisé",
+        "model_name": model_name,
         "pipeline": pipeline,
         "decision_threshold": DECISION_THRESHOLD,
         "features": list(X_train.columns),
@@ -141,6 +171,7 @@ def create_model_artifact(pipeline, X_train):
             "random_state": RANDOM_STATE,
             "class_weight": "balanced via sample_weight",
         },
+        "metrics": load_evaluation_metrics(model_name),
     }
 
     return artifact
@@ -149,6 +180,7 @@ def create_model_artifact(pipeline, X_train):
 # ============================================================
 # 6. SAUVEGARDE AVEC JOBLIB
 # ============================================================
+
 
 def save_model(artifact):
 
@@ -166,6 +198,7 @@ def save_model(artifact):
 # 7. VÉRIFICATION DU FICHIER SAUVEGARDÉ
 # ============================================================
 
+
 def verify_saved_model():
 
     print("\nVérification du modèle sauvegardé...")
@@ -182,6 +215,7 @@ def verify_saved_model():
 # ============================================================
 # 8. POINT D'ENTRÉE DU PROGRAMME
 # ============================================================
+
 
 def main():
 

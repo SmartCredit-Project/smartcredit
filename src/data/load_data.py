@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 # Chemin racine du projet SmartCredit
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -24,9 +23,7 @@ def load_dataset(file_path=DATASET_PATH):
     file_path = Path(file_path)
 
     if not file_path.exists():
-        raise FileNotFoundError(
-            f"Dataset introuvable : {file_path}"
-        )
+        raise FileNotFoundError(f"Dataset introuvable : {file_path}")
 
     if file_path.suffix.lower() != ".csv":
         raise ValueError("Le fichier doit être au format CSV.")

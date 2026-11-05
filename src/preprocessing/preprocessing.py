@@ -3,7 +3,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-
 # -------------------------------------------------
 # 1. Définition des variables utilisées par le modèle
 # -------------------------------------------------
@@ -30,18 +29,13 @@ TARGET_COLUMN = "loan_status"
 # 2. Pipeline de traitement des données numériques
 # -------------------------------------------------
 
+
 def create_numeric_pipeline():
 
     numeric_pipeline = Pipeline(
         steps=[
-            (
-                "imputer",
-                SimpleImputer(strategy="median")
-            ),
-            (
-                "scaler",
-                StandardScaler()
-            ),
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
         ]
     )
 
@@ -52,18 +46,13 @@ def create_numeric_pipeline():
 # 3. Pipeline de traitement des données catégorielles
 # -------------------------------------------------
 
+
 def create_categorical_pipeline():
 
     categorical_pipeline = Pipeline(
         steps=[
-            (
-                "imputer",
-                SimpleImputer(strategy="most_frequent")
-            ),
-            (
-                "encoder",
-                OneHotEncoder(handle_unknown="ignore")
-            ),
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("encoder", OneHotEncoder(handle_unknown="ignore")),
         ]
     )
 
@@ -74,6 +63,7 @@ def create_categorical_pipeline():
 # 4. Combinaison des deux pipelines
 # -------------------------------------------------
 
+
 def create_preprocessor():
 
     numeric_pipeline = create_numeric_pipeline()
@@ -82,18 +72,10 @@ def create_preprocessor():
 
     preprocessor = ColumnTransformer(
         transformers=[
-            (
-                "numeric",
-                numeric_pipeline,
-                NUMERIC_FEATURES
-            ),
-            (
-                "categorical",
-                categorical_pipeline,
-                CATEGORICAL_FEATURES
-            ),
+            ("numeric", numeric_pipeline, NUMERIC_FEATURES),
+            ("categorical", categorical_pipeline, CATEGORICAL_FEATURES),
         ],
-        remainder="drop"
+        remainder="drop",
     )
 
     return preprocessor

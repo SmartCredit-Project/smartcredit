@@ -1,15 +1,14 @@
 from pathlib import Path
 
 import joblib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
-import matplotlib.pyplot as plt
 
-from src.preprocessing.cleaning import clean_dataset
 from src.features.feature_selection import split_features_target
+from src.preprocessing.cleaning import clean_dataset
 from src.training.split_data import split_data
-
 
 # ============================================================
 # 1. CONFIGURATION
@@ -33,6 +32,7 @@ MAX_SAMPLES = 1000
 # 2. CHARGEMENT DU MODÈLE
 # ============================================================
 
+
 def load_model():
 
     print("\nChargement du modèle final...")
@@ -50,6 +50,7 @@ def load_model():
 # ============================================================
 # 3. PRÉPARATION DES DONNÉES
 # ============================================================
+
 
 def prepare_data():
 
@@ -72,6 +73,7 @@ def prepare_data():
 # ============================================================
 # 4. TRANSFORMATION DES DONNÉES
 # ============================================================
+
 
 def transform_data(pipeline, X_test):
 
@@ -107,6 +109,7 @@ def transform_data(pipeline, X_test):
 # 5. CALCUL DES VALEURS SHAP
 # ============================================================
 
+
 def calculate_shap_values(model, X_transformed):
 
     print("\nCréation de l'explicateur SHAP...")
@@ -141,15 +144,12 @@ def calculate_shap_values(model, X_transformed):
 
     if shap_values.ndim != 2:
 
-        raise ValueError(
-            f"Format SHAP inattendu : {shap_values.shape}"
-        )
+        raise ValueError(f"Format SHAP inattendu : {shap_values.shape}")
 
     if shap_values.shape != X_transformed.shape:
 
         raise ValueError(
-            "Les dimensions des valeurs SHAP et des variables "
-            "ne correspondent pas."
+            "Les dimensions des valeurs SHAP et des variables " "ne correspondent pas."
         )
 
     print("Calcul SHAP terminé.")
@@ -160,6 +160,7 @@ def calculate_shap_values(model, X_transformed):
 # ============================================================
 # 6. ANALYSE GLOBALE : IMPORTANCE DES VARIABLES
 # ============================================================
+
 
 def global_analysis(shap_values, X_transformed):
 
@@ -211,10 +212,12 @@ def global_analysis(shap_values, X_transformed):
     # Calcul de l'importance moyenne absolue
     importance = np.abs(shap_values).mean(axis=0)
 
-    importance_df = pd.DataFrame({
-        "Feature": X_transformed.columns,
-        "Mean_Absolute_SHAP": importance,
-    })
+    importance_df = pd.DataFrame(
+        {
+            "Feature": X_transformed.columns,
+            "Mean_Absolute_SHAP": importance,
+        }
+    )
 
     importance_df = importance_df.sort_values(
         by="Mean_Absolute_SHAP",
@@ -236,6 +239,7 @@ def global_analysis(shap_values, X_transformed):
 # ============================================================
 # 7. ANALYSE INDIVIDUELLE : UN DEMANDEUR
 # ============================================================
+
 
 def individual_analysis(explainer, shap_values, X_transformed):
 
@@ -288,6 +292,7 @@ def individual_analysis(explainer, shap_values, X_transformed):
 # ============================================================
 # 8. POINT D'ENTRÉE DU PROGRAMME
 # ============================================================
+
 
 def main():
 

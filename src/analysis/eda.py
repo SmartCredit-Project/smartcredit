@@ -1,12 +1,9 @@
-from pathlib import Path
 from contextlib import redirect_stdout
 from io import StringIO
+from pathlib import Path
 
-import pandas as pd
-
-from src.data.load_data import load_dataset
 from src.analysis.visualizations import generate_all_visualizations
-
+from src.data.load_data import load_dataset
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -54,9 +51,7 @@ def analyze_dataset(df):
 
     report.append(str(missing_values))
 
-    report.append(
-        f"\nTotal des valeurs manquantes : {df.isnull().sum().sum()}"
-    )
+    report.append(f"\nTotal des valeurs manquantes : {df.isnull().sum().sum()}")
 
     # 6. Doublons
     report.append("\n6. DOUBLONS")
@@ -73,9 +68,7 @@ def analyze_dataset(df):
     # 8. Variables catégorielles
     report.append("\n8. VARIABLES CATÉGORIELLES")
 
-    categorical_columns = df.select_dtypes(
-        include=["object", "category"]
-    ).columns
+    categorical_columns = df.select_dtypes(include=["object", "category"]).columns
 
     for column in categorical_columns:
 
@@ -88,14 +81,11 @@ def analyze_dataset(df):
 
     if "loan_status" in df.columns:
 
-        target_counts = df["loan_status"].value_counts(
-            dropna=False
-        )
+        target_counts = df["loan_status"].value_counts(dropna=False)
 
-        target_percentages = df["loan_status"].value_counts(
-            normalize=True,
-            dropna=False
-        ) * 100
+        target_percentages = (
+            df["loan_status"].value_counts(normalize=True, dropna=False) * 100
+        )
 
         report.append("Effectifs :")
         report.append(str(target_counts))
@@ -122,9 +112,7 @@ def main():
 
     # Vérification de la variable cible
     if "loan_status" not in df.columns:
-        raise ValueError(
-            "La variable cible loan_status est absente."
-        )
+        raise ValueError("La variable cible loan_status est absente.")
 
     # Analyse
     report = analyze_dataset(df)
@@ -132,18 +120,12 @@ def main():
     # Sauvegarde du rapport
     report_path = PROCESSED_DIR / "eda_report.txt"
 
-    report_path.write_text(
-        report,
-        encoding="utf-8"
-    )
+    report_path.write_text(report, encoding="utf-8")
 
     print("\nRapport enregistré :", report_path)
 
     # Visualisations
-    generate_all_visualizations(
-        df,
-        FIGURES_DIR
-    )
+    generate_all_visualizations(df, FIGURES_DIR)
 
     print("\nANALYSE EXPLORATOIRE TERMINÉE.")
     print("Consulte data/processed/ pour les résultats.")
