@@ -103,6 +103,10 @@ Création d'un administrateur :
 docker compose exec smartcredit-backend python manage.py createsuperuser
 ```
 
+L'administration Django (`/admin/`) se connecte avec **l'adresse
+électronique et le mot de passe** du compte (le nom d'utilisateur interne
+n'est pas demandé).
+
 Appliquer les migrations manuellement si nécessaire :
 
 ```bash
@@ -131,7 +135,7 @@ doivent être définies.
 | `SUPERADMIN` | Accès global : utilisateurs, institutions, journaux, drapeaux, demandes et prédictions |
 | `ADMIN` | Limité à son institution : agents, demandeurs, demandes, prédictions, affectations et statistiques |
 | `CREDIT_AGENT` | Limité à son institution : demandeurs, demandes et prédictions |
-| `APPLICANT` | Fiche et demandes personnelles ; création de sa propre demande |
+| `APPLICANT` | Fiche et demandes personnelles ; création et prédiction sur ses propres demandes |
 
 Règles principales :
 
@@ -245,9 +249,9 @@ Les transitions d'état sont contrôlées par le serveur.
 | GET | `/api/model-info/` | Informations sur le modèle actif |
 | GET | `/api/health/` | État du service et du modèle |
 
-La prédiction peut être demandée de deux manières.
-
-À partir d'une demande enregistrée :
+La prédiction se base uniquement sur une demande de crédit déjà
+enregistrée. Les caractéristiques sont lues côté serveur, ce qui évite de
+les transmettre une seconde fois :
 
 ```json
 {
@@ -255,18 +259,13 @@ La prédiction peut être demandée de deux manières.
 }
 ```
 
-Ou directement à partir des caractéristiques :
+La demande doit exister, avoir un revenu strictement positif et être
+accessible par l'utilisateur connecté. Un demandeur ne peut analyser que ses
+propres demandes, un `ADMIN` ou un `CREDIT_AGENT` uniquement celles de son
+institution, et un `SUPERADMIN` toutes les demandes.
 
-```json
-{
-  "person_age": 25,
-  "person_income": 30000,
-  "person_home_ownership": "RENT",
-  "person_emp_length": 3,
-  "loan_intent": "PERSONAL",
-  "loan_amnt": 5000
-}
-```
+Une seule prédiction est autorisée par demande. Une nouvelle tentative
+renvoie `409 Conflict` avec l'identifiant de la prédiction existante.
 
 Exemple de réponse :
 
@@ -276,7 +275,9 @@ Exemple de réponse :
   "credit_application": 1,
   "prediction": 1,
   "predicted_class": 1,
+  "result": "DEFAULT_RISK_DETECTED",
   "default_probability": 0.82,
+  "default_probability_percentage": 82.0,
   "no_default_probability": 0.18,
   "risk_level": "HIGH",
   "risk_level_display": "Risque élevé",

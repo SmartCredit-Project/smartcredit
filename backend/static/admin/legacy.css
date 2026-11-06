@@ -1,0 +1,33 @@
+/* Approxime l'ancien design de l'admin Django (palette 4.x, coins peu arrondis, sans ombres). */
+
+:root {
+    --breadcrumbs-bg: var(--primary);
+    --breadcrumbs-fg: #c4dce8;
+    --button-bg: var(--primary);
+    --button-hover-bg: var(--secondary);
+    --default-button-bg: var(--secondary);
+    --default-button-hover-bg: #205067;
+    --object-tools-bg: var(--secondary);
+    --object-tools-hover-bg: var(--primary);
+    --header-link-color: #ffc;
+    color-scheme: light;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+button,
+.button,
+.btn,
+.module,
+.module h2,
+#changelist-filter,
+.paginator a,
+.object-tools a,
+.selector,
+.selector-chosen,
+.calendarbox,
+.clockbox {
+    border-radius: 4px !important;
+    box-shadow: none !important;
+}

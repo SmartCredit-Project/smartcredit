@@ -51,7 +51,6 @@ class ApplicantTests(APITestCase):
                 "last_name": "Dupont",
                 "email": "jean.dupont@example.com",
                 "phone": "+257 12 34 56 78",
-                "annual_income": 45000,
             },
             format="json",
         )
@@ -78,7 +77,6 @@ class ApplicantTests(APITestCase):
                 "last_name": "Dupont",
                 "email": "demandeur@example.com",
                 "institution": self.institution.id,
-                "annual_income": 45000,
             },
             format="json",
         )

@@ -65,12 +65,6 @@ class Applicant(models.Model):
         blank=True,
     )
 
-    annual_income = models.FloatField(
-        "revenu annuel",
-        default=0,
-        help_text="Revenu annuel déclaré par le demandeur.",
-    )
-
     financial_situation = models.TextField(
         "situation financière",
         blank=True,
