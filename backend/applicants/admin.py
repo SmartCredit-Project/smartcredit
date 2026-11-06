@@ -12,7 +12,6 @@ class ApplicantAdmin(admin.ModelAdmin):
         "email",
         "phone",
         "institution",
-        "annual_income",
         "created_at",
     ]
 

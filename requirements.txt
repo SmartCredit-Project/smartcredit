@@ -11,6 +11,9 @@ psycopg[binary]
 # Serveur de production Django
 gunicorn
 
+# Serving des fichiers statiques
+whitenoise>=6.6
+
 # Machine Learning
 pandas
 numpy

@@ -1,4 +1,5 @@
 from applicants.models import Applicant
+from django.test import Client, TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -301,3 +302,44 @@ class UserManagementTests(APITestCase):
 
         self.agent.refresh_from_db()
         self.assertFalse(self.agent.is_active)
+
+
+class AdminLoginTests(TestCase):
+
+    def setUp(self):
+        self.superadmin = User.objects.create_superuser(
+            username="root",
+            email="root@example.com",
+            password="MotDePasse!2026",
+        )
+
+    def test_admin_login_with_email(self):
+        client = Client()
+
+        response = client.post(
+            "/admin/login/",
+            {
+                "username": "root@example.com",
+                "password": "MotDePasse!2026",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            int(client.session["_auth_user_id"]),
+            self.superadmin.id,
+        )
+
+    def test_admin_login_rejects_unknown_email(self):
+        client = Client()
+
+        response = client.post(
+            "/admin/login/",
+            {
+                "username": "inconnu@example.com",
+                "password": "MotDePasse!2026",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("_auth_user_id", client.session)

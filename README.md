@@ -103,6 +103,10 @@ Création d'un administrateur :
 docker compose exec smartcredit-backend python manage.py createsuperuser
 ```
 
+L'administration Django (`/admin/`) se connecte avec **l'adresse
+électronique et le mot de passe** du compte (le nom d'utilisateur interne
+n'est pas demandé).
+
 Appliquer les migrations manuellement si nécessaire :
 
 ```bash

@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
+from .forms import EmailAdminAuthenticationForm
 from .models import ActivityLog, FeatureFlag, FinancialInstitution, User
+
+admin.site.login_form = EmailAdminAuthenticationForm
 
 
 @admin.register(FinancialInstitution)

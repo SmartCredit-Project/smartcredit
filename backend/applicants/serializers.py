@@ -33,7 +33,6 @@ class ApplicantSerializer(serializers.ModelSerializer):
             "date_of_birth",
             "occupation",
             "employer",
-            "annual_income",
             "financial_situation",
             "created_at",
             "updated_at",
@@ -54,14 +53,6 @@ class ApplicantSerializer(serializers.ModelSerializer):
         if query.exists():
             raise serializers.ValidationError(
                 "Un demandeur possède déjà cette adresse."
-            )
-
-        return value
-
-    def validate_annual_income(self, value):
-        if value < 0:
-            raise serializers.ValidationError(
-                "Le revenu annuel ne peut pas être négatif."
             )
 
         return value
