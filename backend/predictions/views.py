@@ -2,7 +2,9 @@ import logging
 
 from accounts.audit import is_feature_enabled, log_activity
 from accounts.models import ActivityLog
-from accounts.permissions import IsAdminOrSuperAdmin, IsStaffRole
+from accounts.permissions import IsAdminOrSuperAdmin
+from credit_applications.models import CreditApplication
+from django.db import transaction
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
@@ -96,12 +98,7 @@ class PredictionViewSet(
     serializer_class = PredictionSerializer
 
     def get_permissions(self):
-        if self.action == "create":
-            permission_classes = [IsStaffRole]
-        else:
-            permission_classes = [IsAuthenticated]
-
-        return [permission() for permission in permission_classes]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         queryset = Prediction.objects.select_related(
@@ -151,34 +148,52 @@ class PredictionViewSet(
 
         request_serializer.is_valid(raise_exception=True)
 
-        credit_application = request_serializer.validated_data.get("credit_application")
+        credit_application = request_serializer.validated_data["credit_application"]
 
         user = request.user
 
-        if credit_application is not None:
-            if user.is_superadmin:
-                allowed = True
+        if user.is_superadmin:
+            allowed = True
 
-            elif user.is_institution_admin or user.is_credit_agent:
-                allowed = bool(
-                    user.institution_id
-                    and credit_application.institution_id == user.institution_id
-                )
+        elif user.is_institution_admin or user.is_credit_agent:
+            allowed = bool(
+                user.institution_id
+                and credit_application.institution_id == user.institution_id
+            )
 
-            else:
-                allowed = credit_application.applicant.user_id == user.id
+        else:
+            allowed = credit_application.applicant.user_id == user.id
 
-            if not allowed:
-                raise PermissionDenied("Vous ne pouvez pas analyser cette demande.")
-
-        features = request_serializer.get_features()
+        if not allowed:
+            raise PermissionDenied("Vous ne pouvez pas analyser cette demande.")
 
         try:
-            prediction, result = predict_and_save(
-                features,
-                credit_application=credit_application,
-                created_by=user,
-            )
+            with transaction.atomic():
+                credit_application = CreditApplication.objects.select_for_update().get(
+                    pk=credit_application.pk
+                )
+
+                existing_prediction = credit_application.predictions.first()
+
+                if existing_prediction is not None:
+                    return Response(
+                        {
+                            "detail": (
+                                "Une prédiction existe déjà pour cette "
+                                "demande de crédit."
+                            ),
+                            "prediction": existing_prediction.id,
+                        },
+                        status=status.HTTP_409_CONFLICT,
+                    )
+
+                features = credit_application.get_model_features()
+
+                prediction, result = predict_and_save(
+                    features,
+                    credit_application=credit_application,
+                    created_by=user,
+                )
 
         except FileNotFoundError as error:
             logger.exception("Modèle indisponible.")

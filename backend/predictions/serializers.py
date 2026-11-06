@@ -35,6 +35,10 @@ class PredictionSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    result = serializers.SerializerMethodField()
+
+    default_probability_percentage = serializers.SerializerMethodField()
+
     risk_level_display = serializers.CharField(
         source="get_risk_level_display",
         read_only=True,
@@ -57,7 +61,9 @@ class PredictionSerializer(serializers.ModelSerializer):
             "institution_name",
             "prediction",
             "predicted_class",
+            "result",
             "default_probability",
+            "default_probability_percentage",
             "no_default_probability",
             "risk_level",
             "risk_level_display",
@@ -70,95 +76,32 @@ class PredictionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    def get_result(self, obj) -> str:
+        if obj.predicted_class == 1:
+            return "DEFAULT_RISK_DETECTED"
+
+        return "NO_DEFAULT_RISK"
+
+    def get_default_probability_percentage(self, obj) -> float:
+        return round(obj.default_probability * 100, 2)
+
 
 class PredictionRequestSerializer(serializers.Serializer):
-    """
-    Requête de prédiction.
-
-    Deux modes sont supportés :
-    - `credit_application` : utilise les caractéristiques enregistrées.
-    - caractéristiques brutes : analyse ponctuelle sans demande.
-    """
+    """Requête de prédiction basée sur une demande enregistrée."""
 
     credit_application = serializers.PrimaryKeyRelatedField(
         queryset=CreditApplication.objects.all(),
-        required=False,
-        allow_null=True,
     )
 
-    person_age = serializers.IntegerField(
-        min_value=18,
-        max_value=100,
-        required=False,
-    )
-
-    person_income = serializers.FloatField(
-        min_value=0.000001,
-        required=False,
-    )
-
-    person_home_ownership = serializers.ChoiceField(
-        choices=CreditApplication.HomeOwnership.values,
-        required=False,
-    )
-
-    person_emp_length = serializers.FloatField(
-        min_value=0,
-        allow_null=True,
-        required=False,
-        default=None,
-    )
-
-    loan_intent = serializers.ChoiceField(
-        choices=CreditApplication.LoanIntent.values,
-        required=False,
-    )
-
-    loan_amnt = serializers.FloatField(
-        min_value=0.000001,
-        required=False,
-    )
-
-    def validate(self, attrs):
-        application = attrs.get("credit_application")
-
-        if application is not None:
-            return attrs
-
-        required_features = [
-            "person_age",
-            "person_income",
-            "person_home_ownership",
-            "loan_intent",
-            "loan_amnt",
-        ]
-
-        missing = [feature for feature in required_features if feature not in attrs]
-
-        if missing:
+    def validate_credit_application(self, application):
+        if application.person_income is None or application.person_income <= 0:
             raise serializers.ValidationError(
-                {
-                    "detail": (
-                        "Fournissez une demande de crédit ou "
-                        "les caractéristiques suivantes : "
-                        f"{', '.join(missing)}."
-                    )
-                }
+                "Le revenu annuel doit être strictement positif."
             )
 
-        return attrs
+        if application.loan_amnt is None or application.loan_amnt <= 0:
+            raise serializers.ValidationError(
+                "Le montant du crédit doit être strictement positif."
+            )
 
-    def get_features(self):
-        application = self.validated_data.get("credit_application")
-
-        if application is not None:
-            return application.get_model_features()
-
-        return {
-            "person_age": self.validated_data["person_age"],
-            "person_income": self.validated_data["person_income"],
-            "person_home_ownership": (self.validated_data["person_home_ownership"]),
-            "person_emp_length": (self.validated_data.get("person_emp_length")),
-            "loan_intent": self.validated_data["loan_intent"],
-            "loan_amnt": self.validated_data["loan_amnt"],
-        }
+        return application

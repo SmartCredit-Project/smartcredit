@@ -36,6 +36,20 @@ class PredictionTests(APITestCase):
             institution=self.other_institution,
         )
 
+        self.admin = User.objects.create_user(
+            username="admin",
+            email="admin@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.ADMIN,
+            institution=self.institution,
+        )
+
+        self.superadmin = User.objects.create_superuser(
+            username="superadmin",
+            email="superadmin@example.com",
+            password="MotDePasse!2026",
+        )
+
         self.applicant_user = User.objects.create_user(
             username="demandeur",
             email="demandeur@example.com",
@@ -52,6 +66,22 @@ class PredictionTests(APITestCase):
             institution=self.institution,
         )
 
+        self.other_applicant_user = User.objects.create_user(
+            username="autre.demandeur",
+            email="autre.demandeur@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.APPLICANT,
+            institution=self.other_institution,
+        )
+
+        self.other_applicant = Applicant.objects.create(
+            user=self.other_applicant_user,
+            first_name="Autre",
+            last_name="Personne",
+            email="autre.personne@example.com",
+            institution=self.other_institution,
+        )
+
         self.application = CreditApplication.objects.create(
             applicant=self.applicant,
             institution=self.institution,
@@ -62,6 +92,18 @@ class PredictionTests(APITestCase):
             loan_intent="PERSONAL",
             loan_amnt=10000,
             created_by=self.agent,
+        )
+
+        self.other_application = CreditApplication.objects.create(
+            applicant=self.other_applicant,
+            institution=self.other_institution,
+            person_age=35,
+            person_income=60000,
+            person_home_ownership="OWN",
+            person_emp_length=8,
+            loan_intent="MEDICAL",
+            loan_amnt=15000,
+            created_by=self.other_agent,
         )
 
     def test_predict_from_credit_application(self):
@@ -79,9 +121,16 @@ class PredictionTests(APITestCase):
         )
 
         self.assertIn("prediction", response.data)
+        self.assertIn("result", response.data)
         self.assertIn("default_probability", response.data)
+        self.assertIn("default_probability_percentage", response.data)
         self.assertIn("risk_level", response.data)
         self.assertIn("message", response.data)
+        self.assertEqual(response.data["decision_threshold"], 0.59)
+        self.assertEqual(
+            response.data["default_probability_percentage"],
+            round(response.data["default_probability"] * 100, 2),
+        )
 
         self.assertEqual(
             Prediction.objects.count(),
@@ -113,41 +162,12 @@ class PredictionTests(APITestCase):
             CreditApplication.Status.ANALYZED,
         )
 
-    def test_predict_ad_hoc_without_application(self):
+    def test_prediction_requires_credit_application(self):
         self.client.force_authenticate(user=self.agent)
 
         response = self.client.post(
             reverse("prediction-list"),
-            {
-                "person_age": 25,
-                "person_income": 30000,
-                "person_home_ownership": "OWN",
-                "person_emp_length": 2,
-                "loan_intent": "EDUCATION",
-                "loan_amnt": 5000,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_201_CREATED,
-        )
-
-        prediction = Prediction.objects.get()
-
-        self.assertIsNone(prediction.credit_application)
-        self.assertEqual(
-            prediction.institution,
-            self.institution,
-        )
-
-    def test_prediction_requires_features(self):
-        self.client.force_authenticate(user=self.agent)
-
-        response = self.client.post(
-            reverse("prediction-list"),
-            {"person_age": 25},
+            {},
             format="json",
         )
 
@@ -155,8 +175,83 @@ class PredictionTests(APITestCase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
+        self.assertIn("credit_application", response.data)
 
-    def test_applicant_cannot_run_prediction(self):
+    def test_prediction_with_unknown_application(self):
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": 999999},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("credit_application", response.data)
+        self.assertEqual(Prediction.objects.count(), 0)
+
+    def test_prediction_is_rejected_with_zero_income(self):
+        application = CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=30,
+            person_income=0,
+            person_home_ownership="RENT",
+            person_emp_length=5,
+            loan_intent="PERSONAL",
+            loan_amnt=10000,
+            created_by=self.agent,
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": application.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("credit_application", response.data)
+        self.assertEqual(Prediction.objects.count(), 0)
+
+    def test_prediction_cannot_be_created_twice(self):
+        self.client.force_authenticate(user=self.agent)
+
+        first_response = self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": self.application.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            first_response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        second_response = self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": self.application.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            second_response.status_code,
+            status.HTTP_409_CONFLICT,
+        )
+        self.assertEqual(
+            second_response.data["prediction"],
+            first_response.data["id"],
+        )
+        self.assertEqual(Prediction.objects.count(), 1)
+
+    def test_applicant_can_predict_own_application(self):
         self.client.force_authenticate(user=self.applicant_user)
 
         response = self.client.post(
@@ -167,7 +262,55 @@ class PredictionTests(APITestCase):
 
         self.assertEqual(
             response.status_code,
+            status.HTTP_201_CREATED,
+        )
+        self.assertEqual(Prediction.objects.count(), 1)
+
+    def test_applicant_cannot_predict_other_applicant_application(self):
+        self.client.force_authenticate(user=self.applicant_user)
+
+        response = self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": self.other_application.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
             status.HTTP_403_FORBIDDEN,
+        )
+        self.assertEqual(Prediction.objects.count(), 0)
+
+    def test_admin_can_predict_institution_application(self):
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": self.application.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+    def test_superadmin_can_predict_any_application(self):
+        self.client.force_authenticate(user=self.superadmin)
+
+        response = self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": self.other_application.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+        self.assertEqual(
+            Prediction.objects.get().institution,
+            self.other_institution,
         )
 
     def test_agent_cannot_predict_other_institution_application(self):
