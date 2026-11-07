@@ -5,6 +5,7 @@ Django settings for SmartCredit project.
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import parse_qsl, unquote, urlparse
 
 # ============================================================
 # 1. CONFIGURATION GENERALE
@@ -27,6 +28,11 @@ ALLOWED_HOSTS = [
     ).split(",")
     if host.strip()
 ]
+
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # ============================================================
@@ -111,31 +117,64 @@ WSGI_APPLICATION = "config.wsgi.application"
 # 7. BASE DE DONNEES POSTGRESQL
 # ============================================================
 
-DATABASES = {
-    "default": {
+
+def parse_database_url(database_url):
+    """Convertit une URL PostgreSQL Render en configuration Django."""
+
+    parsed = urlparse(database_url)
+
+    if parsed.scheme not in {"postgres", "postgresql"}:
+        raise ValueError("DATABASE_URL doit utiliser le protocole PostgreSQL.")
+
+    options = dict(parse_qsl(parsed.query))
+
+    config = {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get(
-            "DB_NAME",
-            "smartcredit_db",
-        ),
-        "USER": os.environ.get(
-            "DB_USER",
-            "smartcredit_user",
-        ),
-        "PASSWORD": os.environ.get(
-            "DB_PASSWORD",
-            "",
-        ),
-        "HOST": os.environ.get(
-            "DB_HOST",
-            "localhost",
-        ),
-        "PORT": os.environ.get(
-            "DB_PORT",
-            "5432",
-        ),
+        "NAME": unquote(parsed.path.lstrip("/")),
+        "USER": unquote(parsed.username or ""),
+        "PASSWORD": unquote(parsed.password or ""),
+        "HOST": parsed.hostname or "",
+        "PORT": str(parsed.port or "5432"),
+        "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "600")),
+        "CONN_HEALTH_CHECKS": True,
     }
-}
+
+    if options:
+        config["OPTIONS"] = options
+
+    return config
+
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    DATABASES = {"default": parse_database_url(DATABASE_URL)}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get(
+                "DB_NAME",
+                "smartcredit_db",
+            ),
+            "USER": os.environ.get(
+                "DB_USER",
+                "smartcredit_user",
+            ),
+            "PASSWORD": os.environ.get(
+                "DB_PASSWORD",
+                "",
+            ),
+            "HOST": os.environ.get(
+                "DB_HOST",
+                "localhost",
+            ),
+            "PORT": os.environ.get(
+                "DB_PORT",
+                "5432",
+            ),
+        }
+    }
 
 
 # ============================================================
@@ -228,7 +267,19 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in (
+        os.environ.get("CSRF_TRUSTED_ORIGINS") or ",".join(CORS_ALLOWED_ORIGINS)
+    ).split(",")
+    if origin.strip()
+]
+
+if RENDER_EXTERNAL_HOSTNAME:
+    render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
+
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
 
 
 # ============================================================
@@ -297,6 +348,15 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = "media/"
 

@@ -44,6 +44,12 @@ Thumbs.db
 .ipynb_checkpoints/
 
 # =========================
+# FICHIERS STATIQUES COLLECTES
+# =========================
+
+backend/staticfiles/
+
+# =========================
 # LOGS
 # =========================
 
