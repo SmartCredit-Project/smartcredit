@@ -55,6 +55,12 @@ data/raw/
 data/processed/
 
 # =========================
+# FICHIERS STATIQUES COLLECTES
+# =========================
+
+backend/staticfiles/
+
+# =========================
 # DOCUMENTATION INUTILE POUR L'IMAGE
 # =========================
 

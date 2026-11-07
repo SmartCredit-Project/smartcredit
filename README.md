@@ -113,6 +113,36 @@ Appliquer les migrations manuellement si nécessaire :
 docker compose exec smartcredit-backend python manage.py migrate
 ```
 
+### 5.1 Déploiement sur Render
+
+Le fichier `render.yaml` décrit un service Docker et une base PostgreSQL.
+Les migrations et `collectstatic` sont exécutés automatiquement à chaque
+démarrage par `docker-entrypoint.sh`, avant Gunicorn.
+
+1. Pousser le dépôt sur GitHub.
+2. Dans Render : **New > Blueprint**, sélectionner le dépôt.
+3. Vérifier le service `smartcredit-api` et la base `smartcredit-db`.
+4. Renseigner `CORS_ALLOWED_ORIGINS` avec l'URL du frontend.
+5. Lancer le déploiement.
+
+Render fournit automatiquement `DATABASE_URL`, `PORT` et
+`RENDER_EXTERNAL_HOSTNAME`. L'URL Render est ajoutée automatiquement à
+`ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS`.
+
+Création du super administrateur après le premier déploiement :
+
+```bash
+# Depuis le Shell du service Render
+python manage.py createsuperuser
+```
+
+Sur l'offre gratuite, le service s'endort après 15 minutes d'inactivité et
+les migrations sont rejouées au redémarrage. La base PostgreSQL gratuite de
+Render expire après 30 jours. Pour une utilisation durable, passer à une
+offre payante. Avec plusieurs instances, utiliser `preDeployCommand` pour
+les migrations et retirer `python manage.py migrate` de
+`docker-entrypoint.sh` afin d'éviter les exécutions concurrentes.
+
 ## 6. Démarrage local sans Docker
 
 ```bash
