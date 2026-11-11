@@ -3,6 +3,7 @@ import logging
 from accounts.audit import is_feature_enabled, log_activity
 from accounts.models import ActivityLog
 from accounts.permissions import IsAdminOrSuperAdmin
+from accounts.scoping import scope_predictions
 from credit_applications.models import CreditApplication
 from django.db import transaction
 from drf_spectacular.types import OpenApiTypes
@@ -109,19 +110,7 @@ class PredictionViewSet(
             "institution",
         ).all()
 
-        user = self.request.user
-
-        if user.is_superadmin:
-            pass
-
-        elif user.is_institution_admin or user.is_credit_agent:
-            if not user.institution_id:
-                return queryset.none()
-
-            queryset = queryset.filter(institution_id=user.institution_id)
-
-        else:
-            queryset = queryset.filter(credit_application__applicant__user=user)
+        queryset = scope_predictions(queryset, self.request.user)
 
         risk_level = self.request.query_params.get("risk_level")
         if risk_level:
@@ -155,10 +144,20 @@ class PredictionViewSet(
         if user.is_superadmin:
             allowed = True
 
-        elif user.is_institution_admin or user.is_credit_agent:
+        elif user.is_institution_admin:
             allowed = bool(
                 user.institution_id
                 and credit_application.institution_id == user.institution_id
+            )
+
+        elif user.is_credit_agent:
+            allowed = bool(
+                user.institution_id
+                and credit_application.institution_id == user.institution_id
+                and (
+                    credit_application.created_by_id == user.id
+                    or credit_application.assigned_agent_id == user.id
+                )
             )
 
         else:

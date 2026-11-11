@@ -129,11 +129,27 @@ Render fournit automatiquement `DATABASE_URL`, `PORT` et
 `RENDER_EXTERNAL_HOSTNAME`. L'URL Render est ajoutée automatiquement à
 `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS`.
 
-Création du super administrateur après le premier déploiement :
+Sur l'offre gratuite, le Shell Render n'est pas disponible. Le super
+administrateur est créé automatiquement au démarrage par la commande
+`ensure_superuser`, si les variables suivantes sont définies :
+
+- `DJANGO_SUPERUSER_EMAIL` (obligatoire)
+- `DJANGO_SUPERUSER_PASSWORD` (obligatoire)
+- `DJANGO_SUPERUSER_FIRST_NAME` (optionnel)
+- `DJANGO_SUPERUSER_LAST_NAME` (optionnel)
+
+Dans `render.yaml`, l'email est demandé au déploiement (`sync: false`) et le
+mot de passe est généré automatiquement par Render. Après le déploiement,
+récupérer le mot de passe dans **Environment** du service, se connecter à
+`/admin/` avec l'email, puis le changer immédiatement.
+
+La commande est idempotente : si le compte existe déjà et qu'il est déjà
+super administrateur, son mot de passe n'est pas modifié. Pour le
+réinitialiser, définir temporairement `DJANGO_SUPERUSER_RESET_PASSWORD=true`
+puis redéployer. Elle peut aussi être lancée manuellement :
 
 ```bash
-# Depuis le Shell du service Render
-python manage.py createsuperuser
+python manage.py ensure_superuser
 ```
 
 Sur l'offre gratuite, le service s'endort après 15 minutes d'inactivité et
@@ -164,7 +180,7 @@ doivent être définies.
 |---|---|
 | `SUPERADMIN` | Accès global : utilisateurs, institutions, journaux, drapeaux, demandes et prédictions |
 | `ADMIN` | Limité à son institution : agents, demandeurs, demandes, prédictions, affectations et statistiques |
-| `CREDIT_AGENT` | Limité à son institution : demandeurs, demandes et prédictions |
+| `CREDIT_AGENT` | Uniquement ses propres demandeurs et demandes, plus les demandes qui lui sont assignées |
 | `APPLICANT` | Fiche et demandes personnelles ; création et prédiction sur ses propres demandes |
 
 Règles principales :
@@ -174,12 +190,19 @@ Règles principales :
 - Un `SUPERADMIN` gère les `ADMIN` et les institutions.
 - Un `ADMIN` crée, modifie et désactive uniquement les `CREDIT_AGENT` de son
   institution.
-- Un `CREDIT_AGENT` enregistre les demandeurs et traite les demandes de son
-  institution.
+- Un `CREDIT_AGENT` enregistre ses propres demandeurs et traite uniquement les
+  demandes qu'il a créées ou qui lui sont assignées. Il ne voit pas les dossiers
+  des autres agents de la même institution.
 - Un demandeur créé par un agent peut s'inscrire plus tard avec le même email :
   son compte est automatiquement rattaché au dossier existant.
-- Les données sont systématiquement filtrées par institution, sauf pour le
-  `SUPERADMIN`.
+- Un `ADMIN` voit toute son institution, mais jamais les autres institutions.
+- Un `APPLICANT` ne voit que sa fiche, ses demandes et ses prédictions.
+- Un accès ou une réaffectation entre institutions est refusé (`403` ou `404`).
+- Un agent ne peut pas créer ni modifier une demande pour le demandeur d'un
+  collègue, sauf si la demande lui est assignée.
+- Un demandeur déjà rattaché à une institution ne peut plus en changer.
+- Les institutions sont visibles uniquement par leur personnel ; un demandeur
+  sans institution voit l'annuaire des institutions actives.
 - Les suppressions d'utilisateurs sont réalisées par désactivation.
 
 Toutes les routes sont protégées par JWT sauf l'inscription, la connexion, le
@@ -291,8 +314,9 @@ les transmettre une seconde fois :
 
 La demande doit exister, avoir un revenu strictement positif et être
 accessible par l'utilisateur connecté. Un demandeur ne peut analyser que ses
-propres demandes, un `ADMIN` ou un `CREDIT_AGENT` uniquement celles de son
-institution, et un `SUPERADMIN` toutes les demandes.
+propres demandes, un `CREDIT_AGENT` uniquement les demandes qu'il a créées ou
+qui lui sont assignées, un `ADMIN` toutes celles de son institution, et un
+`SUPERADMIN` toutes les demandes.
 
 Une seule prédiction est autorisée par demande. Une nouvelle tentative
 renvoie `409 Conflict` avec l'identifiant de la prédiction existante.
@@ -335,8 +359,9 @@ Le résultat est enregistré dans PostgreSQL avec la version du modèle utilisé
 | GET | `/api/dashboard/predictions/` | Statistiques des prédictions |
 | GET | `/api/dashboard/applications/` | Statistiques des demandes |
 
-Ces endpoints sont réservés au personnel (super administrateur,
-administrateur d'institution et agent de crédit) et filtrés par institution.
+Ces endpoints sont réservés au personnel. Un `ADMIN` voit son institution, un
+`CREDIT_AGENT` uniquement ses dossiers et demandes assignées, et un
+`SUPERADMIN` toutes les données.
 
 ### Documentation OpenAPI
 

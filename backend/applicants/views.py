@@ -1,6 +1,7 @@
 from accounts.audit import log_activity
 from accounts.models import ActivityLog
 from accounts.permissions import IsStaffRole
+from accounts.scoping import scope_applicants
 from django.db.models import Q
 from rest_framework import serializers, viewsets
 from rest_framework.exceptions import PermissionDenied
@@ -15,7 +16,8 @@ class ApplicantViewSet(viewsets.ModelViewSet):
     Gestion des demandeurs de crédit.
 
     - SUPERADMIN : tous les demandeurs.
-    - ADMIN / CREDIT_AGENT : demandeurs de leur institution.
+    - ADMIN : demandeurs de son institution.
+    - CREDIT_AGENT : demandeurs qu'il a créés ou liés à ses demandes.
     - APPLICANT : complète et consulte son propre profil.
     """
 
@@ -34,21 +36,10 @@ class ApplicantViewSet(viewsets.ModelViewSet):
         queryset = Applicant.objects.select_related(
             "user",
             "institution",
+            "created_by",
         ).all()
 
-        user = self.request.user
-
-        if user.is_superadmin:
-            pass
-
-        elif user.is_institution_admin or user.is_credit_agent:
-            if not user.institution_id:
-                return queryset.none()
-
-            queryset = queryset.filter(institution_id=user.institution_id)
-
-        else:
-            queryset = queryset.filter(user=user)
+        queryset = scope_applicants(queryset, self.request.user)
 
         search = self.request.query_params.get("search")
         if search:
@@ -62,7 +53,7 @@ class ApplicantViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         requester = self.request.user
-        extra = {}
+        extra = {"created_by": requester}
 
         if requester.is_applicant:
             if Applicant.objects.filter(user=requester).exists():
@@ -108,9 +99,25 @@ class ApplicantViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         requester = self.request.user
+        instance = serializer.instance
         extra = {}
 
-        if not requester.is_superadmin and (
+        if requester.is_applicant:
+            requested_institution = serializer.validated_data.get(
+                "institution",
+                instance.institution,
+            )
+
+            if instance.institution_id and (
+                requested_institution is None
+                or requested_institution.pk != instance.institution_id
+            ):
+                raise PermissionDenied(
+                    "Vous ne pouvez pas changer d'institution après "
+                    "avoir été rattaché."
+                )
+
+        elif not requester.is_superadmin and (
             requester.is_institution_admin or requester.is_credit_agent
         ):
             extra["institution"] = requester.institution
