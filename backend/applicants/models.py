@@ -26,6 +26,19 @@ class Applicant(models.Model):
         verbose_name="institution",
     )
 
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_applicants",
+        verbose_name="créé par",
+        help_text=(
+            "Agent ou administrateur ayant enregistré le demandeur. "
+            "Permet l'isolation des dossiers entre agents."
+        ),
+    )
+
     first_name = models.CharField(
         "prénom",
         max_length=100,

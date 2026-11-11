@@ -1,4 +1,9 @@
+import os
+from io import StringIO
+from unittest.mock import patch
+
 from applicants.models import Applicant
+from django.core.management import call_command
 from django.test import Client, TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -343,3 +348,159 @@ class AdminLoginTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("_auth_user_id", client.session)
+
+
+class EnsureSuperuserCommandTests(TestCase):
+
+    def _environment(self, **overrides):
+        values = {
+            "DJANGO_SUPERUSER_EMAIL": "root@example.com",
+            "DJANGO_SUPERUSER_PASSWORD": "MotDePasse!2026",
+            "DJANGO_SUPERUSER_FIRST_NAME": "Super",
+            "DJANGO_SUPERUSER_LAST_NAME": "Admin",
+            "DJANGO_SUPERUSER_RESET_PASSWORD": "false",
+        }
+        values.update(overrides)
+
+        return patch.dict(os.environ, values, clear=False)
+
+    def test_creates_superuser_from_environment(self):
+        with self._environment():
+            call_command("ensure_superuser", stdout=StringIO())
+
+        user = User.objects.get(email="root@example.com")
+
+        self.assertTrue(user.is_superuser)
+        self.assertTrue(user.is_staff)
+        self.assertTrue(user.is_active)
+        self.assertEqual(user.role, User.Role.SUPERADMIN)
+        self.assertEqual(user.first_name, "Super")
+        self.assertEqual(user.last_name, "Admin")
+        self.assertTrue(user.check_password("MotDePasse!2026"))
+
+    def test_command_is_idempotent_and_keeps_password(self):
+        with self._environment():
+            call_command("ensure_superuser", stdout=StringIO())
+
+        with self._environment(DJANGO_SUPERUSER_PASSWORD="AutreMotDePasse!2026"):
+            call_command("ensure_superuser", stdout=StringIO())
+
+        self.assertEqual(
+            User.objects.filter(email="root@example.com").count(),
+            1,
+        )
+
+        user = User.objects.get(email="root@example.com")
+        self.assertTrue(user.check_password("MotDePasse!2026"))
+
+    def test_adopts_existing_account_and_sets_environment_password(self):
+        user = User.objects.create_user(
+            username="existing",
+            email="root@example.com",
+            password="AncienMotDePasse!2026",
+            role=User.Role.APPLICANT,
+        )
+
+        with self._environment():
+            call_command("ensure_superuser", stdout=StringIO())
+
+        user.refresh_from_db()
+
+        self.assertTrue(user.is_superuser)
+        self.assertTrue(user.is_staff)
+        self.assertEqual(user.role, User.Role.SUPERADMIN)
+        self.assertTrue(user.check_password("MotDePasse!2026"))
+
+    def test_reset_password_flag_updates_existing_superuser(self):
+        with self._environment():
+            call_command("ensure_superuser", stdout=StringIO())
+
+        with self._environment(
+            DJANGO_SUPERUSER_PASSWORD="NouveauMotDePasse!2026",
+            DJANGO_SUPERUSER_RESET_PASSWORD="true",
+        ):
+            call_command("ensure_superuser", stdout=StringIO())
+
+        user = User.objects.get(email="root@example.com")
+        self.assertTrue(user.check_password("NouveauMotDePasse!2026"))
+
+    def test_skips_when_credentials_are_missing(self):
+        with self._environment(
+            DJANGO_SUPERUSER_EMAIL="",
+            DJANGO_SUPERUSER_PASSWORD="",
+        ):
+            call_command("ensure_superuser", stdout=StringIO())
+
+        self.assertFalse(User.objects.filter(email="root@example.com").exists())
+
+
+class FinancialInstitutionIsolationTests(APITestCase):
+
+    def setUp(self):
+        self.institution = FinancialInstitution.objects.create(
+            name="Banque Test",
+            code="BQT",
+        )
+        self.other_institution = FinancialInstitution.objects.create(
+            name="Autre Banque",
+            code="AUT",
+        )
+
+        self.agent = User.objects.create_user(
+            username="agent",
+            email="agent@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+            institution=self.institution,
+        )
+
+        self.applicant = User.objects.create_user(
+            username="demandeur",
+            email="demandeur@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.APPLICANT,
+        )
+
+        self.unaffiliated_agent = User.objects.create_user(
+            username="sans.institution",
+            email="sans.institution@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+        )
+
+    def test_agent_only_sees_own_institution(self):
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.get(reverse("institution-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(
+            response.data["results"][0]["id"],
+            self.institution.id,
+        )
+        self.assertEqual(
+            self.client.get(
+                reverse(
+                    "institution-detail",
+                    args=[self.other_institution.id],
+                )
+            ).status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+    def test_applicant_without_institution_sees_active_directory(self):
+        self.client.force_authenticate(user=self.applicant)
+
+        response = self.client.get(reverse("institution-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 2)
+
+    def test_staff_without_institution_sees_nothing(self):
+        self.client.force_authenticate(user=self.unaffiliated_agent)
+
+        response = self.client.get(reverse("institution-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 0)

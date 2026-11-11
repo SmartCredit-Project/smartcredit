@@ -73,6 +73,7 @@ class CreditApplicationTests(APITestCase):
             last_name="Dupont",
             email="jean.dupont@example.com",
             institution=self.institution,
+            created_by=self.agent,
         )
 
         self.other_applicant = Applicant.objects.create(
@@ -80,6 +81,7 @@ class CreditApplicationTests(APITestCase):
             last_name="Personne",
             email="autre@example.com",
             institution=self.other_institution,
+            created_by=self.other_agent,
         )
 
     def test_agent_can_create_application(self):
@@ -167,6 +169,155 @@ class CreditApplicationTests(APITestCase):
             response.status_code,
             status.HTTP_403_FORBIDDEN,
         )
+
+    def test_agent_cannot_create_for_colleague_applicant(self):
+        same_institution_agent = User.objects.create_user(
+            username="collegue",
+            email="collegue@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+            institution=self.institution,
+        )
+
+        colleague_applicant = Applicant.objects.create(
+            first_name="Collegue",
+            last_name="Client",
+            email="collegue.client@example.com",
+            institution=self.institution,
+            created_by=same_institution_agent,
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.post(
+            reverse("credit-application-list"),
+            application_payload(colleague_applicant),
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_agent_cannot_reassign_to_other_institution_applicant(self):
+        application = CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=30,
+            person_income=50000,
+            person_home_ownership="RENT",
+            person_emp_length=5,
+            loan_intent="PERSONAL",
+            loan_amnt=10000,
+            created_by=self.agent,
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.patch(
+            reverse(
+                "credit-application-detail",
+                args=[application.id],
+            ),
+            {"applicant": self.other_applicant.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        application.refresh_from_db()
+        self.assertEqual(application.applicant, self.applicant)
+
+    def test_agent_cannot_reassign_to_colleague_applicant(self):
+        same_institution_agent = User.objects.create_user(
+            username="collegue",
+            email="collegue@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+            institution=self.institution,
+        )
+
+        colleague_applicant = Applicant.objects.create(
+            first_name="Collegue",
+            last_name="Client",
+            email="collegue.client@example.com",
+            institution=self.institution,
+            created_by=same_institution_agent,
+        )
+
+        application = CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=30,
+            person_income=50000,
+            person_home_ownership="RENT",
+            person_emp_length=5,
+            loan_intent="PERSONAL",
+            loan_amnt=10000,
+            created_by=self.agent,
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.patch(
+            reverse(
+                "credit-application-detail",
+                args=[application.id],
+            ),
+            {"applicant": colleague_applicant.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        application.refresh_from_db()
+        self.assertEqual(application.applicant, self.applicant)
+
+    def test_superadmin_reassignment_updates_institution(self):
+        superadmin = User.objects.create_superuser(
+            username="root",
+            email="root@example.com",
+            password="MotDePasse!2026",
+        )
+
+        application = CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=30,
+            person_income=50000,
+            person_home_ownership="RENT",
+            person_emp_length=5,
+            loan_intent="PERSONAL",
+            loan_amnt=10000,
+            created_by=self.agent,
+        )
+
+        self.client.force_authenticate(user=superadmin)
+
+        response = self.client.patch(
+            reverse(
+                "credit-application-detail",
+                args=[application.id],
+            ),
+            {"applicant": self.other_applicant.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        application.refresh_from_db()
+        self.assertEqual(application.applicant, self.other_applicant)
+        self.assertEqual(application.institution, self.other_institution)
 
     def test_application_features_are_validated(self):
         self.client.force_authenticate(user=self.agent)
@@ -412,8 +563,16 @@ class CreditApplicationTests(APITestCase):
             own_application.id,
         )
 
-    def test_agent_only_sees_institution_applications(self):
-        CreditApplication.objects.create(
+    def test_agent_only_sees_own_or_assigned_applications(self):
+        same_institution_agent = User.objects.create_user(
+            username="collegue",
+            email="collegue@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+            institution=self.institution,
+        )
+
+        own_application = CreditApplication.objects.create(
             applicant=self.applicant,
             institution=self.institution,
             person_age=30,
@@ -423,6 +582,18 @@ class CreditApplicationTests(APITestCase):
             loan_intent="PERSONAL",
             loan_amnt=10000,
             created_by=self.agent,
+        )
+
+        CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=30,
+            person_income=50000,
+            person_home_ownership="RENT",
+            person_emp_length=5,
+            loan_intent="PERSONAL",
+            loan_amnt=12000,
+            created_by=same_institution_agent,
         )
 
         CreditApplication.objects.create(
@@ -446,3 +617,83 @@ class CreditApplicationTests(APITestCase):
             status.HTTP_200_OK,
         )
         self.assertEqual(response.data["count"], 1)
+        self.assertEqual(
+            response.data["results"][0]["id"],
+            own_application.id,
+        )
+
+    def test_agent_sees_assigned_application_from_colleague(self):
+        same_institution_agent = User.objects.create_user(
+            username="collegue",
+            email="collegue@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+            institution=self.institution,
+        )
+
+        application = CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=30,
+            person_income=50000,
+            person_home_ownership="RENT",
+            person_emp_length=5,
+            loan_intent="PERSONAL",
+            loan_amnt=10000,
+            created_by=same_institution_agent,
+            assigned_agent=self.agent,
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.get(
+            reverse(
+                "credit-application-detail",
+                args=[application.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(response.data["id"], application.id)
+
+    def test_agent_cannot_access_other_institution_application(self):
+        application = CreditApplication.objects.create(
+            applicant=self.other_applicant,
+            institution=self.other_institution,
+            person_age=35,
+            person_income=60000,
+            person_home_ownership="OWN",
+            person_emp_length=8,
+            loan_intent="MEDICAL",
+            loan_amnt=15000,
+            created_by=self.other_agent,
+        )
+
+        detail_url = reverse(
+            "credit-application-detail",
+            args=[application.id],
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        self.assertEqual(
+            self.client.get(detail_url).status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.assertEqual(
+            self.client.patch(
+                detail_url,
+                {"person_income": 70000},
+                format="json",
+            ).status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.assertEqual(
+            self.client.delete(detail_url).status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+        self.assertTrue(CreditApplication.objects.filter(pk=application.id).exists())

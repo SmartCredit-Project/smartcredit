@@ -2,6 +2,12 @@ from datetime import timedelta
 
 from accounts.models import User
 from accounts.permissions import IsStaffRole
+from accounts.scoping import (
+    scope_applicants,
+    scope_credit_applications,
+    scope_predictions,
+    scope_users,
+)
 from applicants.models import Applicant
 from credit_applications.models import CreditApplication
 from django.db.models import Avg, Count, Sum
@@ -21,18 +27,6 @@ def group_counts(queryset, field):
     }
 
 
-def scope_queryset(queryset, user):
-    """Limite un queryset à l'institution de l'utilisateur."""
-
-    if user.is_superadmin:
-        return queryset
-
-    if not user.institution_id:
-        return queryset.none()
-
-    return queryset.filter(institution_id=user.institution_id)
-
-
 class DashboardOverviewView(APIView):
     """GET /api/dashboard/ - Statistiques générales."""
 
@@ -42,16 +36,16 @@ class DashboardOverviewView(APIView):
     def get(self, request):
         user = request.user
 
-        predictions = scope_queryset(
+        predictions = scope_predictions(
             Prediction.objects.all(),
             user,
         )
-        users = scope_queryset(User.objects.all(), user)
-        applicants = scope_queryset(
+        users = scope_users(User.objects.all(), user)
+        applicants = scope_applicants(
             Applicant.objects.all(),
             user,
         )
-        applications = scope_queryset(
+        applications = scope_credit_applications(
             CreditApplication.objects.all(),
             user,
         )
@@ -106,7 +100,7 @@ class PredictionStatsView(APIView):
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
-        queryset = scope_queryset(
+        queryset = scope_predictions(
             Prediction.objects.all(),
             request.user,
         )
@@ -172,7 +166,7 @@ class ApplicationStatsView(APIView):
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
-        queryset = scope_queryset(
+        queryset = scope_credit_applications(
             CreditApplication.objects.all(),
             request.user,
         )

@@ -13,6 +13,14 @@ echo "Application des migrations de la base de données..."
 
 python manage.py migrate --noinput
 
+if [ -n "${DJANGO_SUPERUSER_EMAIL:-}" ] && [ -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]; then
+    echo "Vérification du super administrateur..."
+
+    python manage.py ensure_superuser
+else
+    echo "Création automatique du super administrateur ignorée (variables absentes)."
+fi
+
 PORT="${PORT:-8000}"
 GUNICORN_WORKERS="${GUNICORN_WORKERS:-1}"
 GUNICORN_THREADS="${GUNICORN_THREADS:-4}"

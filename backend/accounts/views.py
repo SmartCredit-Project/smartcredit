@@ -254,6 +254,7 @@ class FinancialInstitutionViewSet(viewsets.ModelViewSet):
 
     - SUPERADMIN : accès complet.
     - Autres     : lecture seule, limitée à leur institution.
+    - APPLICANT sans institution : annuaire des institutions actives.
     """
 
     queryset = FinancialInstitution.objects.all()
@@ -278,7 +279,10 @@ class FinancialInstitutionViewSet(viewsets.ModelViewSet):
         if user.institution_id:
             return queryset.filter(pk=user.institution_id)
 
-        return queryset.filter(is_active=True)
+        if user.is_applicant:
+            return queryset.filter(is_active=True)
+
+        return queryset.none()
 
     def perform_create(self, serializer):
         institution = serializer.save()

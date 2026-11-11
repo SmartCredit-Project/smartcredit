@@ -375,7 +375,27 @@ class PredictionTests(APITestCase):
             self.application.id,
         )
 
-    def test_agent_only_sees_institution_predictions(self):
+    def test_agent_only_sees_own_or_assigned_predictions(self):
+        same_institution_agent = User.objects.create_user(
+            username="collegue",
+            email="collegue@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+            institution=self.institution,
+        )
+
+        colleague_application = CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=31,
+            person_income=52000,
+            person_home_ownership="RENT",
+            person_emp_length=6,
+            loan_intent="PERSONAL",
+            loan_amnt=11000,
+            created_by=same_institution_agent,
+        )
+
         self.client.force_authenticate(user=self.agent)
 
         self.client.post(
@@ -384,7 +404,15 @@ class PredictionTests(APITestCase):
             format="json",
         )
 
-        self.client.force_authenticate(user=self.other_agent)
+        self.client.force_authenticate(user=same_institution_agent)
+
+        self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": colleague_application.id},
+            format="json",
+        )
+
+        self.client.force_authenticate(user=self.agent)
 
         response = self.client.get(reverse("prediction-list"))
 
@@ -392,7 +420,76 @@ class PredictionTests(APITestCase):
             response.status_code,
             status.HTTP_200_OK,
         )
-        self.assertEqual(response.data["count"], 0)
+        self.assertEqual(response.data["count"], 1)
+
+    def test_agent_cannot_predict_colleague_application(self):
+        same_institution_agent = User.objects.create_user(
+            username="collegue",
+            email="collegue@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+            institution=self.institution,
+        )
+
+        colleague_application = CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=31,
+            person_income=52000,
+            person_home_ownership="RENT",
+            person_emp_length=6,
+            loan_intent="PERSONAL",
+            loan_amnt=11000,
+            created_by=same_institution_agent,
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": colleague_application.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_agent_can_predict_assigned_colleague_application(self):
+        same_institution_agent = User.objects.create_user(
+            username="collegue",
+            email="collegue@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+            institution=self.institution,
+        )
+
+        assigned_application = CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=31,
+            person_income=52000,
+            person_home_ownership="RENT",
+            person_emp_length=6,
+            loan_intent="PERSONAL",
+            loan_amnt=11000,
+            created_by=same_institution_agent,
+            assigned_agent=self.agent,
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": assigned_application.id},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
 
     def test_dashboard_statistics(self):
         self.client.force_authenticate(user=self.agent)
@@ -413,3 +510,53 @@ class PredictionTests(APITestCase):
             response.data["predictions"]["total"],
             1,
         )
+
+    def test_agent_dashboard_excludes_colleague_data(self):
+        same_institution_agent = User.objects.create_user(
+            username="collegue",
+            email="collegue@example.com",
+            password="MotDePasse!2026",
+            role=User.Role.CREDIT_AGENT,
+            institution=self.institution,
+        )
+
+        colleague_application = CreditApplication.objects.create(
+            applicant=self.applicant,
+            institution=self.institution,
+            person_age=31,
+            person_income=52000,
+            person_home_ownership="RENT",
+            person_emp_length=6,
+            loan_intent="PERSONAL",
+            loan_amnt=11000,
+            created_by=same_institution_agent,
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": self.application.id},
+            format="json",
+        )
+
+        self.client.force_authenticate(user=same_institution_agent)
+
+        self.client.post(
+            reverse("prediction-list"),
+            {"credit_application": colleague_application.id},
+            format="json",
+        )
+
+        self.client.force_authenticate(user=self.agent)
+
+        response = self.client.get(reverse("dashboard-overview"))
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(response.data["users"]["total"], 1)
+        self.assertEqual(response.data["applicants"]["total"], 1)
+        self.assertEqual(response.data["applications"]["total"], 1)
+        self.assertEqual(response.data["predictions"]["total"], 1)

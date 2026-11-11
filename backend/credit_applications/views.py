@@ -1,6 +1,8 @@
 from accounts.audit import log_activity
 from accounts.models import ActivityLog
 from accounts.permissions import IsAdminOrSuperAdmin, IsStaffRole
+from accounts.scoping import scope_applicants, scope_credit_applications
+from applicants.models import Applicant
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status as http_status
@@ -23,7 +25,8 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
     Gestion des demandes de crédit.
 
     - SUPERADMIN : toutes les demandes.
-    - ADMIN / CREDIT_AGENT : demandes de leur institution.
+    - ADMIN : demandes de son institution.
+    - CREDIT_AGENT : demandes qu'il a créées ou qui lui sont assignées.
     - APPLICANT : ses propres demandes.
     """
 
@@ -49,19 +52,7 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
             "institution",
         ).all()
 
-        user = self.request.user
-
-        if user.is_superadmin:
-            pass
-
-        elif user.is_institution_admin or user.is_credit_agent:
-            if not user.institution_id:
-                return queryset.none()
-
-            queryset = queryset.filter(institution_id=user.institution_id)
-
-        else:
-            queryset = queryset.filter(applicant__user=user)
+        queryset = scope_credit_applications(queryset, self.request.user)
 
         application_status = self.request.query_params.get("status")
         if application_status:
@@ -117,6 +108,17 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
                     "Ce demandeur n'appartient pas à votre institution."
                 )
 
+            if (
+                requester.is_credit_agent
+                and not scope_applicants(
+                    Applicant.objects.filter(pk=applicant.pk),
+                    requester,
+                ).exists()
+            ):
+                raise PermissionDenied(
+                    "Ce demandeur ne fait pas partie de vos dossiers."
+                )
+
             institution = requester.institution
 
         application = serializer.save(
@@ -137,6 +139,10 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         requester = self.request.user
         instance = serializer.instance
+        applicant = serializer.validated_data.get(
+            "applicant",
+            instance.applicant,
+        )
 
         if requester.is_applicant:
             if instance.status != CreditApplication.Status.PENDING:
@@ -144,7 +150,39 @@ class CreditApplicationViewSet(viewsets.ModelViewSet):
                     "Une demande en cours de traitement ne peut " "plus être modifiée."
                 )
 
+            if applicant.user_id != requester.id:
+                raise PermissionDenied(
+                    "Vous ne pouvez modifier que vos propres demandes."
+                )
+
+        elif not requester.is_superadmin:
+            if (
+                not requester.institution_id
+                or applicant.institution_id != requester.institution_id
+            ):
+                raise PermissionDenied(
+                    "Ce demandeur n'appartient pas à votre institution."
+                )
+
+            if (
+                requester.is_credit_agent
+                and not scope_applicants(
+                    Applicant.objects.filter(pk=applicant.pk),
+                    requester,
+                ).exists()
+            ):
+                raise PermissionDenied(
+                    "Ce demandeur ne fait pas partie de vos dossiers."
+                )
+
         application = serializer.save()
+
+        if (
+            requester.is_superadmin
+            and application.applicant.institution_id != application.institution_id
+        ):
+            application.institution = application.applicant.institution
+            application.save(update_fields=["institution", "updated_at"])
 
         log_activity(
             action=ActivityLog.Action.UPDATED,

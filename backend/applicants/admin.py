@@ -12,6 +12,7 @@ class ApplicantAdmin(admin.ModelAdmin):
         "email",
         "phone",
         "institution",
+        "created_by",
         "created_at",
     ]
 
@@ -24,4 +25,4 @@ class ApplicantAdmin(admin.ModelAdmin):
         "phone",
     ]
 
-    raw_id_fields = ["user", "institution"]
+    raw_id_fields = ["user", "institution", "created_by"]
